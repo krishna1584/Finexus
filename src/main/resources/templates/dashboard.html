@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Account Dashboard - Finexus Bank</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f7fa;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            color: #1f3b57;
+        }
+
+        .navbar {
+            background-color: #1f3b57;
+        }
+
+        .navbar .nav-link, .navbar .navbar-brand { 
+            color: #ffffff !important; 
+        }
+
+        .navbar .nav-link:hover, .navbar .navbar-brand:hover { 
+            color: #00bfff !important; 
+        }
+
+        .container { max-width: 900px; margin-top: 4rem; }
+
+        h2 {
+            text-align: center; 
+            margin-bottom: 2rem; 
+            font-weight: 600; 
+            color: #1f3b57;
+        }
+
+        .dashboard-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            color: #1f3b57;
+        }
+
+        .form-control { 
+            background: #f1f3f6; 
+            color: #1f3b57; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            margin-bottom: 1rem; 
+        }
+
+        .form-control::placeholder { 
+            color: #6c757d; 
+            opacity: 1; 
+        }
+
+        .form-control:focus { 
+            background: #ffffff; 
+            border-color: #00bfff; 
+            box-shadow: 0 0 8px rgba(0,191,255,0.3); 
+            color: #1f3b57; 
+        }
+
+        button { border-radius: 6px; font-weight: 500; }
+        .btn-primary { background-color: #1f3b57; border: none; }
+        .btn-primary:hover { background-color: #0d243b; }
+        .btn-danger { background-color: #ff4c4c; border: none; }
+        .btn-danger:hover { background-color: #e63946; }
+        .btn-warning { background-color: #ffa500; border: none; color: #121212; }
+        .btn-warning:hover { background-color: #ff8c00; }
+
+        table { color: #1f3b57; }
+        th { color: #00bfff; }
+        td, th { text-align: center; }
+        .deposit { color: #00bfff; }
+        .withdraw { color: #ff4500; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="/">Finexus</a>
+        <div class="collapse navbar-collapse justify-content-end">
+            <ul class="navbar-nav">
+                <li class="nav-item" id="navUser" style="display:none;">
+                    <a class="nav-link disabled" href="#">Hello, <span id="userFullName"></span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/signin" onclick="signOut()">Sign Out</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <h2>Welcome, <span id="userFullNameDashboard"></span></h2>
+
+    <div class="dashboard-card">
+        <p>Balance: ₹<span id="userBalance">0.00</span></p>
+
+        <div class="mb-3">
+            <input type="number" step="0.01" id="depositAmount" placeholder="Deposit Amount" class="form-control"/>
+            <button class="btn btn-primary w-100" onclick="deposit()">Deposit</button>
+        </div>
+
+        <div class="mb-3">
+            <input type="number" step="0.01" id="withdrawAmount" placeholder="Withdraw Amount" class="form-control"/>
+            <button class="btn btn-danger w-100" onclick="withdraw()">Withdraw</button>
+        </div>
+
+        <div class="mb-3 d-flex gap-2">
+            <input type="number" step="0.01" id="transferAmount" placeholder="Transfer Amount" class="form-control"/>
+            <input type="number" id="transferTo" placeholder="Recipient ID" class="form-control"/>
+            <button class="btn btn-warning w-25" onclick="transfer()">Transfer</button>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <h4 class="mb-3">Transaction History</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="transactionTable">
+                <!-- Transactions will be appended here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const token = localStorage.getItem('jwtToken');
+if (!token) { alert("Please login first"); window.location.href = '/signin'; }
+
+const payload = JSON.parse(atob(token.split('.')[1]));
+const userId = payload.userId;
+const userFullName = payload.sub;
+document.getElementById('userFullName').innerText = userFullName;
+document.getElementById('userFullNameDashboard').innerText = userFullName;
+
+let userAccountId = null;
+
+async function loadBalance() {
+    try {
+        const res = await fetch(`/api/accounts/by-user/${userId}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error(`Failed to fetch account: ${res.status}`);
+        const userAccount = await res.json();
+        if (userAccount) {
+            userAccountId = userAccount.id;
+            document.getElementById('userBalance').innerText = userAccount.balance.toFixed(2);
+            await loadTransactions();
+        }
+    } catch (err) { console.error(err); alert("Error loading balance: " + err.message); }
+}
+
+async function loadTransactions() {
+    try {
+        const res = await fetch(`/api/transactions/by-account/${userAccountId}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error("Failed to fetch transactions");
+        const transactions = await res.json();
+        const tbody = document.querySelector('#transactionTable');
+        tbody.innerHTML = '';
+        transactions.forEach(tx => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${tx.id}</td>
+                <td class="${tx.type.toLowerCase()}">${tx.type}</td>
+                <td>₹${tx.amount.toFixed(2)}</td>
+                <td>${new Date(tx.timestamp).toLocaleString()}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) { console.error(err); }
+}
+
+async function deposit() {
+    const amount = parseFloat(document.getElementById('depositAmount').value.trim());
+    if (!userAccountId) return alert("Account not loaded yet");
+    if (isNaN(amount) || amount <= 0) return alert("Enter a valid deposit amount");
+    const res = await fetch(`/api/accounts/${userAccountId}/deposit`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ amount })
+    });
+    if (res.ok) { await loadBalance(); document.getElementById('depositAmount').value = ''; }
+    else alert("Deposit failed");
+}
+
+async function withdraw() {
+    const amount = parseFloat(document.getElementById('withdrawAmount').value.trim());
+    if (!userAccountId) return alert("Account not loaded yet");
+    if (isNaN(amount) || amount <= 0) return alert("Enter a valid withdraw amount");
+    const res = await fetch(`/api/accounts/${userAccountId}/withdraw`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ amount })
+    });
+    if (res.ok) { await loadBalance(); document.getElementById('withdrawAmount').value = ''; }
+    else alert("Withdraw failed");
+}
+
+async function transfer() {
+    const amount = parseFloat(document.getElementById('transferAmount').value.trim());
+    const toId = parseInt(document.getElementById('transferTo').value.trim());
+    if (!userAccountId) return alert("Account not loaded yet");
+    if (isNaN(amount) || amount <= 0) return alert("Enter a valid transfer amount");
+    if (isNaN(toId) || toId <= 0) return alert("Enter a valid recipient account ID");
+    const res = await fetch(`/api/accounts/${userAccountId}/transfer/${toId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ amount })
+    });
+    if (res.ok) { await loadBalance(); document.getElementById('transferAmount').value=''; document.getElementById('transferTo').value=''; alert("Transfer successful"); }
+    else alert("Transfer failed");
+}
+
+function signOut() {
+    localStorage.removeItem('jwtToken');
+    window.location.href = '/signin';
+}
+
+loadBalance();
+</script>
+</body>
+</html>
