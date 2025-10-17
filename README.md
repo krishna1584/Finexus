@@ -1,4 +1,4 @@
-# 🏛️ Banking Application - Microservices Architecture
+# 🏛️ Finexus: Banking Application
 
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.java.com/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
