@@ -1,0 +1,300 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* ============================================================
+   DESIGN TOKEN DEFINITIONS
+   ============================================================ */
+
+:root {
+  /* Light mode tokens */
+  --bg-primary: #F4F4F8;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #EEEEF5;
+  --border-subtle: rgba(10, 10, 15, 0.08);
+  --accent-gold: #C9920A;
+  --accent-gold-soft: rgba(201, 146, 10, 0.10);
+  --accent-purple: #7C3AED;
+  --accent-purple-soft: rgba(124, 58, 237, 0.10);
+  --accent-blue: #2563EB;
+  --accent-blue-soft: rgba(37, 99, 235, 0.10);
+  --positive: #059669;
+  --negative: #E11D48;
+  --text-primary: #0A0A0F;
+  --text-secondary: #6B7280;
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --hero-bg: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+}
+
+.dark {
+  /* Dark mode tokens */
+  --bg-primary: #080810;
+  --bg-surface: #10101E;
+  --bg-surface-2: #181828;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --accent-gold: #F0B90B;
+  --accent-gold-soft: rgba(240, 185, 11, 0.12);
+  --accent-purple: #A78BFA;
+  --accent-purple-soft: rgba(167, 139, 250, 0.12);
+  --accent-blue: #60A5FA;
+  --accent-blue-soft: rgba(96, 165, 250, 0.10);
+  --positive: #10B981;
+  --negative: #F43F5E;
+  --text-primary: #F0F0FA;
+  --text-secondary: #9CA3AF;
+  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --hero-bg: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+}
+
+/* ============================================================
+   GLOBAL BASE STYLES
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.font-display {
+  font-family: 'Sora', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tabular numerals for financial figures */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ============================================================
+   GLASSMORPHISM CARD
+   ============================================================ */
+
+.glass-card {
+  background: rgba(18, 20, 28, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(10, 10, 15, 0.08);
+}
+
+/* ============================================================
+   SKELETON SHIMMER
+   ============================================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 0%,
+    var(--bg-surface-2) 50%,
+    var(--bg-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-surface-2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #F0B90B 0%, #FFD700 40%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #A78BFA 0%, #818CF8 50%, #C4B5FD 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-multi {
+  background: linear-gradient(135deg, #F0B90B 0%, #A78BFA 50%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.border-gold-glow {
+  border: 1px solid var(--accent-gold);
+  box-shadow: 0 0 20px rgba(240, 185, 11, 0.2);
+}
+
+.transition-base {
+  transition: all 0.15s ease-out;
+}
+
+/* Gold accent left border for active nav items */
+.nav-active-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--accent-gold);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Floating animation for hero card */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50% { transform: translateY(-16px) rotate(-2deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Particle float animations */
+@keyframes float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  33% { transform: translate(20px, -30px) scale(1.1); opacity: 0.9; }
+  66% { transform: translate(-15px, 20px) scale(0.9); opacity: 0.5; }
+}
+@keyframes float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+  50% { transform: translate(-25px, -20px) scale(1.2); opacity: 0.8; }
+}
+@keyframes float-3 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  40% { transform: translate(30px, 15px); opacity: 0.9; }
+  80% { transform: translate(-10px, -25px); opacity: 0.3; }
+}
+.animate-float-1 { animation: float-1 8s ease-in-out infinite; }
+.animate-float-2 { animation: float-2 11s ease-in-out infinite; }
+.animate-float-3 { animation: float-3 9s ease-in-out infinite; }
+
+/* Slow spin for decorative orbs */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+/* Glow pulse */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(240,185,11,0.3), 0 0 60px rgba(124,58,237,0.1); }
+  50% { box-shadow: 0 0 40px rgba(240,185,11,0.6), 0 0 100px rgba(124,58,237,0.3); }
+}
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+
+/* Slide-in for toasts */
+@keyframes slideInRight {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(110%); opacity: 0; }
+}
+
+.toast-enter {
+  animation: slideInRight 0.25s ease-out forwards;
+}
+
+.toast-exit {
+  animation: slideOutRight 0.2s ease-in forwards;
+}
+
+/* Drawer slide */
+@keyframes drawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes drawerOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+/* Modal fade/scale */
+@keyframes modalIn {
+  from { transform: scale(0.95) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.modal-enter {
+  animation: modalIn 0.2s ease-out forwards;
+}
+
+/* Input focus ring override */
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px var(--accent-gold-soft);
+}
+
+/* Recharts overrides */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Print styles for transfer receipts */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: white; color: black; }
+}
+
+.print-only { display: none; }

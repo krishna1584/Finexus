@@ -1,0 +1,21 @@
+package com.app.user.service.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.app.user.service.model.entity.User;
+
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    Optional<User> findUserByAuthId(String authId);
+    
+    Optional<User> findByEmailId(String emailId);
+    
+    Boolean existsByEmailId(String emailId);
+
+    Optional<User> findByIdentificationNumber(String identificationNumber);
+
+    Boolean existsByIdentificationNumber(String identificationNumber);
+}
+
