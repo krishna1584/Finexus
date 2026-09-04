@@ -13,9 +13,9 @@ public interface AccountService {
 
     
     @GetMapping("/accounts")
-    ResponseEntity<Account> readByAccountNumber(@RequestParam String accountNumber);
+    ResponseEntity<Account> readByAccountNumber(@RequestParam("accountNumber") String accountNumber);
 
    
     @PutMapping("/accounts")
-    ResponseEntity<Response> updateAccount(@RequestParam String accountNumber, @RequestBody Account account);
+    ResponseEntity<Response> updateAccount(@RequestParam("accountNumber") String accountNumber, @RequestBody Account account);
 }

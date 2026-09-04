@@ -153,6 +153,6 @@ public class FundTransferServiceImpl implements FundTransferService {
     @Override
     public List<FundTransferDto> getAllTransfersByAccountId(String accountId) {
 
-        return fundTransferMapper.convertToDtoList(fundTransferRepository.findFundTransferByFromAccount(accountId));
+        return fundTransferMapper.convertToDtoList(fundTransferRepository.findFundTransferByFromAccountOrToAccount(accountId, accountId));
     }
 }

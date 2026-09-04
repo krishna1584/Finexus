@@ -12,6 +12,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useAccounts } from '@/hooks/useAccounts';
+import { useTransactions } from '@/hooks/useTransactions';
 import { useUIStore } from '@/store/useUIStore';
 import { fundTransferService } from '@/services/fundTransferService';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -35,7 +36,8 @@ const transferSchema = z.object({
 type TransferForm = z.infer<typeof transferSchema>;
 
 export default function TransferPage() {
-  const { primaryAccount, isLoading: accountLoading } = useAccounts();
+  const { primaryAccount, isLoading: accountLoading, refreshAccounts } = useAccounts();
+  const { fetchTransactions } = useTransactions();
   const toast = useUIStore((s) => s.toast);
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -75,6 +77,11 @@ export default function TransferPage() {
         toAccount: formData.toAccount,
         amount: parseFloat(formData.amount),
       });
+      // Refresh balance and transaction list to reflect the transfer immediately
+      await refreshAccounts();
+      if (primaryAccount?.accountNumber) {
+        await fetchTransactions(primaryAccount.accountNumber);
+      }
       setReceipt(result);
       setShowConfirm(false);
       toast('success', 'Transfer successful', result.message);

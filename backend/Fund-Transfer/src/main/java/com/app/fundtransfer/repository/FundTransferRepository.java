@@ -12,4 +12,6 @@ public interface FundTransferRepository extends JpaRepository<FundTransfer, Long
     Optional<FundTransfer> findFundTransferByTransactionReference(String referenceId);
 
     List<FundTransfer> findFundTransferByFromAccount(String accountId);
+
+    List<FundTransfer> findFundTransferByFromAccountOrToAccount(String fromAccount, String toAccount);
 }

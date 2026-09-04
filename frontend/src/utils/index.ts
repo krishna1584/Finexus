@@ -89,8 +89,19 @@ export function maskAccountNumber(accountNumber: string | undefined | null): str
 
 // ---- Transaction helpers ----
 
-export function isCredit(transactionType: string): boolean {
-  return ['DEPOSIT', 'TRANSFER_IN'].includes(transactionType?.toUpperCase());
+export function isCredit(transactionType: string, amount?: number | string | null): boolean {
+  const type = transactionType?.toUpperCase();
+  // For internal transfers the backend sets the same type on both legs;
+  // a positive amount means the receiver side (credit), negative means the sender side (debit).
+  if (type === 'INTERNAL_TRANSFER') {
+    if (amount !== undefined && amount !== null) {
+      const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+      return num > 0;
+    }
+    // Fallback: if no amount provided assume credit (safe default)
+    return true;
+  }
+  return ['DEPOSIT', 'TRANSFER_IN'].includes(type);
 }
 
 export function transactionSign(transactionType: string): '+' | '-' {

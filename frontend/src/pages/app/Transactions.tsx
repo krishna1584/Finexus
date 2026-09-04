@@ -213,37 +213,41 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {pageData.map((tx) => (
-                  <tr
-                    key={tx.referenceId}
-                    onClick={() => setSelectedTx(tx)}
-                    className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">{tx.referenceId}</td>
-                    <td className="px-4 py-3">
-                      <div className="inline-flex items-center gap-2 rounded-lg bg-[var(--bg-surface-2)] px-2.5 py-1 border border-[var(--border-subtle)]">
-                        <span className={`w-1.5 h-1.5 rounded-full ${isCredit(tx.transactionType) ? 'bg-[var(--positive)]' : 'bg-[var(--negative)]'}`} />
-                        <span className="text-xs text-[var(--text-secondary)]">{isCredit(tx.transactionType) ? 'Income' : 'Expense'}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {isCredit(tx.transactionType)
-                          ? <ArrowDownLeft size={14} className="text-[var(--positive)]" />
-                          : <ArrowUpRight size={14} className="text-[var(--negative)]" />}
-                        <TxTypeBadge type={tx.transactionType} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`font-semibold tabular-nums ${isCredit(tx.transactionType) ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
-                        {isCredit(tx.transactionType) ? '+' : '-'}{formatCurrency(tx.amount)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{truncate(tx.comments ?? '—', 42)}</td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{formatDate(tx.localDateTime)}</td>
-                    <td className="px-4 py-3"><StatusBadge status={tx.transactionStatus} /></td>
-                  </tr>
-                ))}
+              {pageData.map((tx) => {
+                  const credit = isCredit(tx.transactionType, tx.amount);
+                  const displayAmount = Math.abs(typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount ?? 0));
+                  return (
+                    <tr
+                      key={tx.referenceId}
+                      onClick={() => setSelectedTx(tx)}
+                      className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">{tx.referenceId}</td>
+                      <td className="px-4 py-3">
+                        <div className="inline-flex items-center gap-2 rounded-lg bg-[var(--bg-surface-2)] px-2.5 py-1 border border-[var(--border-subtle)]">
+                          <span className={`w-1.5 h-1.5 rounded-full ${credit ? 'bg-[var(--positive)]' : 'bg-[var(--negative)]'}`} />
+                          <span className="text-xs text-[var(--text-secondary)]">{credit ? 'Income' : 'Expense'}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {credit
+                            ? <ArrowDownLeft size={14} className="text-[var(--positive)]" />
+                            : <ArrowUpRight size={14} className="text-[var(--negative)]" />}
+                          <TxTypeBadge type={tx.transactionType} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-semibold tabular-nums ${credit ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
+                          {credit ? '+' : '-'}{formatCurrency(displayAmount)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{truncate(tx.comments ?? '—', 42)}</td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{formatDate(tx.localDateTime)}</td>
+                      <td className="px-4 py-3"><StatusBadge status={tx.transactionStatus} /></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -262,8 +266,8 @@ export default function TransactionsPage() {
         {selectedTx && (
           <div className="space-y-4">
             <div className="text-center">
-              <p className={`text-3xl font-display font-bold tabular-nums ${isCredit(selectedTx.transactionType) ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
-                {isCredit(selectedTx.transactionType) ? '+' : '-'}{formatCurrency(selectedTx.amount)}
+              <p className={`text-3xl font-display font-bold tabular-nums ${isCredit(selectedTx.transactionType, selectedTx.amount) ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
+                {isCredit(selectedTx.transactionType, selectedTx.amount) ? '+' : '-'}{formatCurrency(Math.abs(typeof selectedTx.amount === 'string' ? parseFloat(selectedTx.amount) : (selectedTx.amount ?? 0)))}
               </p>
               <div className="mt-2 inline-flex"><TxTypeBadge type={selectedTx.transactionType} /></div>
             </div>

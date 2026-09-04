@@ -15,7 +15,7 @@ import com.app.user.service.model.external.Account;
 public interface AccountService {
 
     @GetMapping("/accounts")
-    ResponseEntity<Account> readByAccountNumber(@RequestParam String accountNumber);
+    ResponseEntity<Account> readByAccountNumber(@RequestParam("accountNumber") String accountNumber);
 
     @PostMapping("/accounts")
     ResponseEntity<Response> createAccount(@RequestBody Account accountRequest);

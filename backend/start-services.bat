@@ -66,7 +66,7 @@ echo   cd banking-frontend
 echo   npm install
 echo   npm start
 echo.
-echo Frontend will be available at: http://localhost:5173
+echo Frontend will be available at: http://localhost:3000
 echo.
 echo NOTE: Since services are running in the background of this terminal,
 echo you can stop them by closing this terminal window or pressing Ctrl+C.

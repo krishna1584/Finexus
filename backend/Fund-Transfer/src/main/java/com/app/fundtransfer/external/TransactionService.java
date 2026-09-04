@@ -32,5 +32,5 @@ public interface TransactionService {
      * @return The response entity containing the response.
      */
     @PostMapping("/transactions/internal")
-    ResponseEntity<Response> makeInternalTransactions(@RequestBody List<Transaction> transactions,@RequestParam String transactionReference);
+    ResponseEntity<Response> makeInternalTransactions(@RequestBody List<Transaction> transactions, @RequestParam("transactionReference") String transactionReference);
 }

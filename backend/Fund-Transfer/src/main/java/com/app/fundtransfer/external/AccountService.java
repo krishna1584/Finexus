@@ -21,7 +21,7 @@ public interface AccountService {
 
     
     @PutMapping("/accounts")
-    ResponseEntity<Response> updateAccount(@RequestParam String accountNumber, @RequestBody Account account);
+    ResponseEntity<Response> updateAccount(@RequestParam("accountNumber") String accountNumber, @RequestBody Account account);
 
     @GetMapping("/accounts/{userId}")
     ResponseEntity<Account> readAccountByUserId(@PathVariable("userId") Long userId);

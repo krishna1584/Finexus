@@ -67,12 +67,38 @@ export function useAccounts() {
     }
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // fetchAccounts only re-fetches if no accounts are loaded yet (used for initial load).
+  // refreshAccounts always fetches fresh data from the server (used after transfers, etc.).
+  const refreshAccounts = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      if (USE_MOCK) {
+        const all = MOCK_ACCOUNTS.filter((a) => a.userId === userId || USE_MOCK);
+        setAccounts(all);
+        setPrimaryAccount(all[0] ?? null);
+      } else {
+        const allAccounts = await accountService.getAllAccountsByUserId(userId);
+        setAccounts(allAccounts);
+        setPrimaryAccount(allAccounts[0] ?? null);
+      }
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr.message);
+      toast('error', 'Failed to refresh accounts', apiErr.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, setAccounts, setPrimaryAccount, setLoading, setError, toast]);
+
   return {
     accounts,
     primaryAccount,
     isLoading,
     error,
     fetchAccounts,
+    refreshAccounts,
   };
 }
 

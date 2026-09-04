@@ -62,8 +62,8 @@ export default function DepositPage() {
   };
 
   const recent = transactions.slice(0, 5);
-  const totalCredits = transactions.filter((t) => isCredit(t.transactionType)).reduce((s, t) => s + t.amount, 0);
-  const totalDebits = transactions.filter((t) => !isCredit(t.transactionType)).reduce((s, t) => s + t.amount, 0);
+  const totalCredits = transactions.filter((t) => isCredit(t.transactionType, t.amount)).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalDebits = transactions.filter((t) => !isCredit(t.transactionType, t.amount)).reduce((s, t) => s + Math.abs(t.amount), 0);
 
   if (success) {
     return (
@@ -208,19 +208,23 @@ export default function DepositPage() {
               <p className="text-sm text-[var(--text-secondary)] py-6 text-center">No transactions yet.</p>
             ) : (
               <div className="space-y-2">
-                {recent.map((tx) => (
-                  <div key={tx.referenceId} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] p-2.5 bg-[var(--bg-surface-2)]">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isCredit(tx.transactionType) ? 'bg-[var(--positive)]/15' : 'bg-[var(--negative)]/15'}`}>
-                      {isCredit(tx.transactionType) ? <ArrowDownToLine size={12} className="text-[var(--positive)]" /> : <ArrowUpFromLine size={12} className="text-[var(--negative)]" />}
+                {recent.map((tx) => {
+                  const credit = isCredit(tx.transactionType, tx.amount);
+                  const displayAmount = Math.abs(typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount ?? 0));
+                  return (
+                    <div key={tx.referenceId} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] p-2.5 bg-[var(--bg-surface-2)]">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${credit ? 'bg-[var(--positive)]/15' : 'bg-[var(--negative)]/15'}`}>
+                        {credit ? <ArrowDownToLine size={12} className="text-[var(--positive)]" /> : <ArrowUpFromLine size={12} className="text-[var(--negative)]" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{tx.comments ?? tx.transactionType}</p>
+                      </div>
+                      <p className={`text-xs font-semibold tabular-nums ${credit ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
+                        {credit ? '+' : '-'}{formatCurrency(displayAmount)}
+                      </p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{tx.comments ?? tx.transactionType}</p>
-                    </div>
-                    <p className={`text-xs font-semibold tabular-nums ${isCredit(tx.transactionType) ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
-                      {isCredit(tx.transactionType) ? '+' : '-'}{formatCurrency(tx.amount)}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
