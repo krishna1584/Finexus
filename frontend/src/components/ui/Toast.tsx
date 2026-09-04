@@ -20,8 +20,8 @@ const toastConfig: Record<ToastType, { icon: React.ReactNode; borderColor: strin
   },
   info: {
     icon: <Info size={16} />,
-    borderColor: 'border-[var(--accent-gold)]',
-    iconColor: 'text-[var(--accent-gold)]',
+    borderColor: 'border-[var(--accent-primary)] dark:border-[var(--accent-secondary)]',
+    iconColor: 'text-[var(--accent-primary)] dark:text-[var(--accent-secondary)]',
   },
 };
 

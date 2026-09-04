@@ -182,5 +182,5 @@ export const MOCK_CASHFLOW = [
 export const MOCK_DISTRIBUTION = [
   { name: 'Deposits', value: 40, color: 'var(--positive)' },
   { name: 'Withdrawals', value: 35, color: 'var(--negative)' },
-  { name: 'Transfers', value: 25, color: 'var(--accent-gold)' },
+  { name: 'Transfers', value: 25, color: 'var(--accent-primary)' },
 ];

@@ -26,7 +26,7 @@ export function ThemeToggle({ labeled = false, size = 'md' }: ThemeToggleProps) 
           aria-label="Toggle dark mode"
           className={[
             'relative w-12 h-6 rounded-full transition-colors duration-200',
-            isDark ? 'bg-[var(--accent-gold)]' : 'bg-[var(--bg-surface-2)] border border-[var(--border-subtle)]',
+            isDark ? 'bg-[var(--accent-secondary)]' : 'bg-[var(--accent-primary)]',
           ].join(' ')}
         >
           <span
@@ -48,7 +48,7 @@ export function ThemeToggle({ labeled = false, size = 'md' }: ThemeToggleProps) 
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className={[
         'rounded-xl border transition-all duration-150',
-        'text-[var(--text-secondary)] hover:text-[var(--accent-gold)] hover:border-[var(--accent-gold)]/30 hover:bg-[var(--accent-gold-soft)]',
+        'text-[var(--text-secondary)] hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary-soft)] dark:hover:text-[var(--accent-secondary)] dark:hover:border-[var(--accent-secondary)]/30 dark:hover:bg-[var(--accent-secondary-soft)]',
         'border-[var(--border-subtle)] bg-[var(--bg-surface-2)]',
         size === 'sm' ? 'p-1.5' : 'p-2',
       ].join(' ')}

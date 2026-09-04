@@ -15,21 +15,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    'bg-[var(--accent-gold)] text-[#0A0A0F] font-semibold hover:brightness-110 shadow-[0_0_20px_rgba(240,185,11,0.3)] hover:shadow-[0_0_30px_rgba(240,185,11,0.5)]',
+    'bg-[var(--accent-primary)] text-white font-semibold hover:brightness-105 shadow-[0_8px_18px_var(--accent-primary-soft)] dark:bg-[var(--accent-secondary)] dark:text-[#0b0f14] dark:hover:brightness-105 dark:shadow-[0_10px_24px_var(--accent-secondary-soft)]',
   secondary:
-    'bg-[var(--bg-surface-2)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent-gold)] hover:text-[var(--accent-gold)]',
+    'bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-2)]',
   ghost:
-    'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)]',
+    'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] border border-transparent',
   danger:
     'bg-[var(--negative)] text-white font-semibold hover:brightness-110',
   outline:
-    'border border-[var(--accent-gold)] text-[var(--accent-gold)] hover:bg-[var(--accent-gold-soft)]',
+    'border border-[var(--accent-primary)] text-[var(--accent-primary)] hover:bg-[var(--accent-primary-soft)] dark:border-[var(--accent-secondary)] dark:text-[var(--accent-secondary)] dark:hover:bg-[var(--accent-secondary-soft)]',
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-xs rounded-lg gap-1.5',
-  md: 'px-4 py-2.5 text-sm rounded-xl gap-2',
-  lg: 'px-6 py-3 text-base rounded-xl gap-2.5',
+  sm: 'h-9 px-3 text-xs rounded-lg gap-1.5',
+  md: 'h-11 px-4 text-sm rounded-xl gap-2',
+  lg: 'h-12 px-6 text-base rounded-xl gap-2.5',
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -57,7 +57,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={[
           'inline-flex items-center justify-center font-medium transition-all duration-150 ease-out select-none',
           'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
-          'active:scale-[0.98]',
+          'active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/40',
           variantClasses[variant],
           sizeClasses[size],
           fullWidth ? 'w-full' : '',

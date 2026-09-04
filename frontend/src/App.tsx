@@ -5,7 +5,6 @@ import { useUIStore } from '@/store/useUIStore';
 // Layout
 import { AppShell } from '@/components/layout/AppShell';
 import { RequireAuth } from '@/components/layout/RequireAuth';
-import { ToastContainer } from '@/components/ui/Toast';
 
 // Public pages
 import LandingPage from '@/pages/public/Landing';
@@ -60,7 +59,6 @@ export default function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <ToastContainer />
     </BrowserRouter>
   );
 }

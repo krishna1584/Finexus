@@ -26,8 +26,8 @@ export default {
       boxShadow: {
         'card-dark': '0 20px 60px rgba(0,0,0,0.4)',
         'card-light': '0 4px 24px rgba(0,0,0,0.06)',
-        'gold': '0 0 20px rgba(240,185,11,0.25)',
-        'gold-lg': '0 0 40px rgba(240,185,11,0.3)',
+        'gold': '0 0 20px rgba(14,165,164,0.25)',
+        'gold-lg': '0 0 40px rgba(14,165,164,0.3)',
       },
       animation: {
         'shimmer': 'shimmer 2s linear infinite',

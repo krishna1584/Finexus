@@ -21,12 +21,12 @@ export function Card({ children, className = '', glass = false, padding = 'md', 
     <div
       onClick={onClick}
       className={[
-        'rounded-2xl border transition-all duration-200',
+        'rounded-3xl border transition-all duration-200',
         glass
-          ? 'backdrop-blur-md bg-[rgba(18,20,28,0.85)] dark:bg-[rgba(18,20,28,0.85)] border-white/8'
+          ? 'glass-card'
           : 'bg-[var(--bg-surface)] border-[var(--border-subtle)]',
-        'shadow-[var(--shadow-card)]',
-        hover ? 'hover:scale-[1.01] hover:border-[var(--accent-gold)]/30 cursor-pointer' : '',
+        'shadow-[var(--shadow-soft)]',
+        hover ? 'hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)] hover:border-[var(--border-strong)] cursor-pointer' : '',
         paddingClasses[padding],
         className,
       ].join(' ')}
@@ -47,9 +47,9 @@ export function CardHeader({ title, subtitle, action, className = '' }: CardHead
   return (
     <div className={`flex items-start justify-between mb-4 ${className}`}>
       <div>
-        <h3 className="text-[var(--text-primary)] font-semibold text-sm">{title}</h3>
+        <h3 className="text-[var(--text-primary)] font-semibold text-base font-display">{title}</h3>
         {subtitle && (
-          <p className="text-[var(--text-secondary)] text-xs mt-0.5">{subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-xs mt-1">{subtitle}</p>
         )}
       </div>
       {action && <div className="ml-4 flex-shrink-0">{action}</div>}

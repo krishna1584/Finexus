@@ -18,21 +18,24 @@ export function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-[var(--bg-primary)] overflow-hidden">
+    <div className="flex h-screen bg-[var(--bg-primary)] overflow-hidden relative">
+      <div className="absolute inset-0 pointer-events-none bg-grid opacity-30" />
+      <div className="absolute -top-40 -left-24 w-[34rem] h-[34rem] rounded-full bg-[var(--accent-primary)]/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-24 w-[28rem] h-[28rem] rounded-full bg-[var(--accent-secondary)]/10 blur-3xl pointer-events-none" />
       {/* Desktop Sidebar */}
       <Sidebar />
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-64 bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] flex flex-col">
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-72 bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-[var(--accent-gold)] rounded-xl flex items-center justify-center">
-                  <Landmark size={18} className="text-[#0A0A0F]" />
+                <div className="w-9 h-9 bg-[var(--accent-primary)] dark:bg-[var(--accent-secondary)] rounded-xl flex items-center justify-center">
+                  <Landmark size={18} className="text-white dark:text-[#0B0F14]" />
                 </div>
-                <span className="font-bold text-[var(--text-primary)] text-lg">Finexus</span>
+                <span className="font-display font-bold text-[var(--text-primary)] text-lg">Finexus</span>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -52,7 +55,7 @@ export function AppShell() {
                         [
                           'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors',
                           isActive
-                            ? 'bg-[var(--accent-gold-soft)] text-[var(--accent-gold)]'
+                            ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] dark:bg-[var(--accent-secondary-soft)] dark:text-[var(--accent-secondary)]'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)]',
                         ].join(' ')
                       }
@@ -69,10 +72,10 @@ export function AppShell() {
       )}
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
         <Navbar onMenuClick={() => setMobileMenuOpen(true)} />
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 md:p-6 max-w-7xl mx-auto">
+          <div className="p-4 md:p-6 lg:p-8 max-w-[1280px] mx-auto">
             <Outlet />
           </div>
         </main>

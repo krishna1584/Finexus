@@ -11,19 +11,19 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  gold: 'bg-[var(--accent-gold-soft)] text-[var(--accent-gold)] border border-[var(--accent-gold)]/20',
+  gold: 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] border border-[var(--accent-primary)]/25 dark:bg-[var(--accent-secondary-soft)] dark:text-[var(--accent-secondary)] dark:border-[var(--accent-secondary)]/25',
   success: 'bg-[var(--positive)]/15 text-[var(--positive)] border border-[var(--positive)]/20',
   danger: 'bg-[var(--negative)]/15 text-[var(--negative)] border border-[var(--negative)]/20',
   neutral: 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)] border border-[var(--border-subtle)]',
-  info: 'bg-blue-500/15 text-blue-400 border border-blue-500/20',
+  info: 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20',
 };
 
 const dotColors: Record<BadgeVariant, string> = {
-  gold: 'bg-[var(--accent-gold)]',
+  gold: 'bg-[var(--accent-primary)] dark:bg-[var(--accent-secondary)]',
   success: 'bg-[var(--positive)]',
   danger: 'bg-[var(--negative)]',
   neutral: 'bg-[var(--text-secondary)]',
-  info: 'bg-blue-400',
+  info: 'bg-[var(--accent-primary)]',
 };
 
 const sizeClasses = {

@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { motion } from 'framer-motion';
 import { Landmark, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -30,21 +31,15 @@ export default function LoginPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Already logged in — skip the login page
   if (isAuthenticated && token) {
     return <Navigate to={redirect} replace />;
   }
-
-
-
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
+  } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginFormData) => {
     setServerError(null);
@@ -62,94 +57,92 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
-      {/* Theme toggle top-right */}
+    <div className="min-h-screen bg-[var(--bg-primary)] relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid opacity-20" />
+      <div className="absolute -top-40 -left-20 w-[30rem] h-[30rem] rounded-full bg-[var(--accent-primary)]/16 blur-3xl" />
+      <div className="absolute -bottom-44 -right-20 w-[26rem] h-[26rem] rounded-full bg-[var(--accent-secondary)]/16 blur-3xl" />
+
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-[400px] animate-slide-in-up">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex flex-col items-center gap-3">
-            <div className="w-14 h-14 bg-[var(--accent-gold)] rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(240,185,11,0.4)]">
-              <Landmark size={26} className="text-[#0A0A0F]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">Welcome back</h1>
-              <p className="text-sm text-[var(--text-secondary)] mt-1">Sign in to your Finexus account</p>
-            </div>
-          </Link>
-        </div>
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-[440px]"
+        >
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-flex flex-col items-center gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-[var(--accent-primary)] dark:bg-[var(--accent-secondary)] flex items-center justify-center shadow-[var(--shadow-soft)]">
+                <Landmark size={24} className="text-white dark:text-[#0B0F14]" />
+              </div>
+              <div>
+                <h1 className="font-display text-3xl font-extrabold">Welcome back</h1>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">Sign in to continue to your Finexus workspace</p>
+              </div>
+            </Link>
+          </div>
 
-        {/* Card */}
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-3xl p-6 shadow-[var(--shadow-card)]">
-          {/* Demo credentials tip */}
-          {import.meta.env.VITE_USE_MOCK_DATA === 'true' && (
-            <div className="mb-4 p-3 rounded-xl bg-[var(--accent-gold-soft)] border border-[var(--accent-gold)]/20">
-              <p className="text-xs text-[var(--accent-gold)] font-medium">
-                🎯 Demo mode — use: <strong>demo@finexus.com</strong> / <strong>password123</strong>
-              </p>
-            </div>
-          )}
+          <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[var(--shadow-card)] p-7">
+            {import.meta.env.VITE_USE_MOCK_DATA === 'true' && (
+              <div className="mb-4 p-3 rounded-2xl bg-[var(--accent-primary-soft)] border border-[var(--accent-primary)]/25 dark:bg-[var(--accent-secondary-soft)] dark:border-[var(--accent-secondary)]/30">
+                <p className="text-xs font-medium text-[var(--text-primary)]">
+                  Demo mode: demo@finexus.com / password123
+                </p>
+              </div>
+            )}
 
-          {/* Server error banner */}
-          {serverError && (
-            <div className="mb-4 p-3 rounded-xl bg-[var(--negative)]/10 border border-[var(--negative)]/20">
-              <p className="text-xs text-[var(--negative)] font-medium">{serverError}</p>
-            </div>
-          )}
+            {serverError && (
+              <div className="mb-4 p-3 rounded-2xl bg-[var(--negative)]/10 border border-[var(--negative)]/20">
+                <p className="text-xs font-medium text-[var(--negative)]">{serverError}</p>
+              </div>
+            )}
 
-          <form id="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input
-              label="Email address"
-              type="email"
-              id="login-email"
-              placeholder="you@example.com"
-              icon={<Mail size={16} />}
-              error={errors.email?.message}
-              autoComplete="email"
-              {...register('email')}
-            />
+            <form id="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Input
+                label="Email"
+                type="email"
+                id="login-email"
+                placeholder="you@company.com"
+                icon={<Mail size={16} />}
+                error={errors.email?.message}
+                autoComplete="email"
+                {...register('email')}
+              />
 
-            <Input
-              label="Password"
-              id="login-password"
-              placeholder="Enter your password"
-              icon={<Lock size={16} />}
-              showPasswordToggle
-              error={errors.password?.message}
-              autoComplete="current-password"
-              {...register('password')}
-            />
+              <Input
+                label="Password"
+                id="login-password"
+                placeholder="Enter your password"
+                icon={<Lock size={16} />}
+                showPasswordToggle
+                error={errors.password?.message}
+                autoComplete="current-password"
+                {...register('password')}
+              />
 
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={isLoading}
-              iconRight={!isLoading ? <ArrowRight size={16} /> : undefined}
-              className="mt-2"
-              id="login-submit-btn"
-            >
-              Sign In
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={isLoading}
+                iconRight={!isLoading ? <ArrowRight size={16} /> : undefined}
+                id="login-submit-btn"
+              >
+                Sign In
+              </Button>
+            </form>
 
-          <div className="mt-4 text-center">
-            <p className="text-xs text-[var(--text-secondary)]">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-[var(--accent-gold)] hover:underline font-medium">
-                Create one free
+            <p className="mt-5 text-center text-sm text-[var(--text-secondary)]">
+              New to Finexus?{' '}
+              <Link to="/register" className="font-semibold text-[var(--accent-primary)] dark:text-[var(--accent-secondary)]">
+                Create account
               </Link>
             </p>
           </div>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-[var(--text-secondary)] mt-6">
-          © 2025 Finexus • Secure Banking Platform
-        </p>
+        </motion.div>
       </div>
     </div>
   );

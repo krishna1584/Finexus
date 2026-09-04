@@ -21,7 +21,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5 uppercase tracking-wide"
+            className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wide"
           >
             {label}
           </label>
@@ -38,10 +38,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={inputType}
             className={[
               'w-full bg-[var(--bg-surface-2)] text-[var(--text-primary)]',
-              'border rounded-xl px-4 py-3 text-sm',
+              'border rounded-2xl px-4 py-3.5 text-sm',
               'placeholder:text-[var(--text-secondary)]/60',
               'transition-all duration-150 outline-none',
-              'focus:border-[var(--accent-gold)] focus:ring-2 focus:ring-[var(--accent-gold-soft)]',
+              'focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary-soft)]',
               error
                 ? 'border-[var(--negative)] focus:border-[var(--negative)] focus:ring-[rgba(244,63,94,0.15)]'
                 : 'border-[var(--border-subtle)]',
@@ -108,9 +108,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           id={selectId}
           className={[
             'w-full bg-[var(--bg-surface-2)] text-[var(--text-primary)]',
-            'border rounded-xl px-4 py-3 text-sm appearance-none',
+            'border rounded-2xl px-4 py-3.5 text-sm appearance-none',
             'transition-all duration-150 outline-none',
-            'focus:border-[var(--accent-gold)] focus:ring-2 focus:ring-[var(--accent-gold-soft)]',
+            'focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary-soft)]',
             error ? 'border-[var(--negative)]' : 'border-[var(--border-subtle)]',
             className,
           ].join(' ')}

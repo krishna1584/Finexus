@@ -35,18 +35,18 @@ export function Sidebar() {
   return (
     <aside
       className={[
-        'hidden md:flex flex-col h-full bg-[var(--bg-surface)] border-r border-[var(--border-subtle)]',
+        'hidden md:flex flex-col h-full bg-[var(--bg-surface)]/95 backdrop-blur-xl border-r border-[var(--border-subtle)]',
         'transition-all duration-200 ease-out relative',
-        sidebarCollapsed ? 'w-[72px]' : 'w-[220px]',
+        sidebarCollapsed ? 'w-[84px]' : 'w-[252px]',
       ].join(' ')}
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-[var(--border-subtle)]">
-        <div className="flex-shrink-0 w-9 h-9 bg-[var(--accent-gold)] rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(240,185,11,0.4)]">
-          <Landmark size={18} className="text-[#0A0A0F]" />
+        <div className="flex-shrink-0 w-10 h-10 bg-[var(--accent-primary)] dark:bg-[var(--accent-secondary)] rounded-2xl flex items-center justify-center shadow-[var(--shadow-soft)]">
+          <Landmark size={18} className="text-white dark:text-[#0B0F14]" />
         </div>
         {!sidebarCollapsed && (
-          <span className="font-bold text-[var(--text-primary)] text-lg tracking-tight">
+          <span className="font-display font-bold text-[var(--text-primary)] text-xl tracking-tight">
             Finexus
           </span>
         )}
@@ -64,7 +64,7 @@ export function Sidebar() {
                     'relative flex items-center gap-3 rounded-xl transition-all duration-150',
                     sidebarCollapsed ? 'px-2.5 py-2.5 justify-center' : 'px-3 py-2.5',
                     isActive
-                      ? 'bg-[var(--accent-gold-soft)] text-[var(--accent-gold)] nav-active-bar'
+                      ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] dark:bg-[var(--accent-secondary-soft)] dark:text-[var(--accent-secondary)] nav-active-bar'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)]',
                   ].join(' ')
                 }
@@ -99,7 +99,7 @@ export function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={toggleSidebar}
-        className="absolute -right-3 top-[72px] w-6 h-6 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent-gold)] shadow-sm transition-colors z-10"
+        className="absolute -right-3 top-[74px] w-7 h-7 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--accent-primary)] dark:hover:text-[var(--accent-secondary)] shadow-[var(--shadow-soft)] transition-colors z-10"
         aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {sidebarCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
