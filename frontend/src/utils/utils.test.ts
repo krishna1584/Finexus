@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { formatCurrency, maskAccountNumber, isCredit, passwordStrength, formatDate } from '../utils';
+import {
+  formatCurrency,
+  maskAccountNumber,
+  isCredit,
+  passwordStrength,
+  formatDate,
+  txCategory,
+  transactionLabel,
+  monthTotals,
+  dateValue,
+} from '../utils';
 
 describe('formatCurrency', () => {
   it('formats a number as INR currency', () => {
@@ -32,6 +42,36 @@ describe('isCredit', () => {
   it('returns true for TRANSFER_IN', () => expect(isCredit('TRANSFER_IN')).toBe(true));
   it('returns false for WITHDRAWAL', () => expect(isCredit('WITHDRAWAL')).toBe(false));
   it('returns false for TRANSFER_OUT', () => expect(isCredit('TRANSFER_OUT')).toBe(false));
+});
+
+describe('txCategory', () => {
+  it('treats a positive INTERNAL_TRANSFER as money in', () =>
+    expect(txCategory('INTERNAL_TRANSFER', 500)).toBe('TRANSFER_IN'));
+  it('treats a negative INTERNAL_TRANSFER as money out', () =>
+    expect(txCategory('INTERNAL_TRANSFER', -500)).toBe('TRANSFER_OUT'));
+  it('labels transfers readably', () =>
+    expect(transactionLabel('INTERNAL_TRANSFER', -1)).toBe('Transfer out'));
+});
+
+describe('monthTotals', () => {
+  it('only counts this month and splits in/out', () => {
+    const now = new Date(2026, 10, 15);
+    const totals = monthTotals(
+      [
+        { transactionType: 'DEPOSIT', amount: 1000, localDateTime: [2026, 11, 2, 10, 0, 0] },
+        { transactionType: 'WITHDRAWAL', amount: -300, localDateTime: '2026-11-03T09:00:00' },
+        { transactionType: 'INTERNAL_TRANSFER', amount: -200, localDateTime: '2026-11-04T09:00:00' },
+        { transactionType: 'DEPOSIT', amount: 9999, localDateTime: '2026-10-30T09:00:00' },
+      ],
+      now
+    );
+    expect(totals).toEqual({ moneyIn: 1000, moneyOut: 500, count: 3 });
+  });
+});
+
+describe('dateValue', () => {
+  it('keeps the time of day when sorting', () =>
+    expect(dateValue([2026, 1, 1, 18, 0, 0])).toBeGreaterThan(dateValue([2026, 1, 1, 9, 0, 0])));
 });
 
 describe('passwordStrength', () => {

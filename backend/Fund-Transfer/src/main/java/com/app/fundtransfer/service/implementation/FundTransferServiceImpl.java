@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.app.fundtransfer.exception.AccountUpdateException;
+import com.app.fundtransfer.exception.AccessDenied;
+import com.app.fundtransfer.exception.BadRequest;
 import com.app.fundtransfer.exception.GlobalErrorCode;
-import com.app.fundtransfer.exception.InsufficientBalance;
 import com.app.fundtransfer.exception.ResourceNotFound;
 import com.app.fundtransfer.external.AccountService;
 import com.app.fundtransfer.external.TransactionService;
@@ -48,7 +48,13 @@ public class FundTransferServiceImpl implements FundTransferService {
 
    
     @Override
-    public FundTransferResponse fundTransfer(FundTransferRequest fundTransferRequest) {
+    public FundTransferResponse fundTransfer(FundTransferRequest fundTransferRequest, Long authUserId) {
+
+        BigDecimal amount = fundTransferRequest.getAmount();
+        if (amount == null || amount.signum() <= 0) {
+            // A negative amount used to pull money out of the recipient's account.
+            throw new BadRequest("Transfer amount must be greater than zero");
+        }
 
         Account fromAccount;
         ResponseEntity<Account> response = accountService.readByAccountNumber(fundTransferRequest.getFromAccount());
@@ -57,14 +63,9 @@ public class FundTransferServiceImpl implements FundTransferService {
             throw new ResourceNotFound("requested account not found on the server", GlobalErrorCode.NOT_FOUND);
         }
         fromAccount = response.getBody();
-        if (!fromAccount.getAccountStatus().equals("ACTIVE")) {
-            log.error("account status is pending or inactive, please update the account status");
-            throw new AccountUpdateException("account is status is :pending", GlobalErrorCode.NOT_ACCEPTABLE);
-        }
-        if (fromAccount.getAvailableBalance().compareTo(fundTransferRequest.getAmount()) < 0) {
-            log.error("required amount to transfer is not available");
-            throw new InsufficientBalance("requested amount is not available", GlobalErrorCode.NOT_ACCEPTABLE);
-        }
+        // You can only send money from your own account.
+        assertOwner(fromAccount, authUserId);
+        // Account status and balance are checked atomically by Account-Service during the transfer.
         Account toAccount;
         String toAccountStr = fundTransferRequest.getToAccount();
         if (toAccountStr != null && toAccountStr.toUpperCase().startsWith("FIN")) {
@@ -98,7 +99,15 @@ public class FundTransferServiceImpl implements FundTransferService {
             }
             toAccount = response.getBody();
         }
-        String transactionId = internalTransfer(fromAccount, toAccount, fundTransferRequest.getAmount());
+        if (fromAccount.getAccountNumber().equals(toAccount.getAccountNumber())) {
+            // Sending to yourself used to create money (two writes to the same row).
+            throw new BadRequest("You cannot transfer to the same account");
+        }
+        String note = fundTransferRequest.getDescription() == null ? "" : fundTransferRequest.getDescription().trim();
+        if (note.length() > 140) {
+            note = note.substring(0, 140);
+        }
+        String transactionId = internalTransfer(fromAccount, toAccount, amount, note);
         FundTransfer fundTransfer = FundTransfer.builder()
                 .transferType(TransferType.INTERNAL)
                 .amount(fundTransferRequest.getAmount())
@@ -114,44 +123,75 @@ public class FundTransferServiceImpl implements FundTransferService {
     }
 
    
-    private String internalTransfer(Account fromAccount, Account toAccount, BigDecimal amount) {
+    private String internalTransfer(Account fromAccount, Account toAccount, BigDecimal amount, String note) {
+        String suffix = note.isEmpty() ? "" : " · " + note;
 
-        fromAccount.setAvailableBalance(fromAccount.getAvailableBalance().subtract(amount));
-        accountService.updateAccount(fromAccount.getAccountNumber(), fromAccount);
-
-        toAccount.setAvailableBalance(toAccount.getAvailableBalance().add(amount));
-        accountService.updateAccount(toAccount.getAccountNumber(), toAccount);
+        // Both legs happen in ONE database transaction inside Account-Service using
+        // atomic UPDATEs: either both balances change or neither does, and two
+        // simultaneous transfers can't spend the same money twice.
+        accountService.transfer(fromAccount.getAccountNumber(), toAccount.getAccountNumber(), amount);
 
         List<Transaction> transactions = List.of(
                 Transaction.builder()
                         .accountId(fromAccount.getAccountNumber())
                         .transactionType("INTERNAL_TRANSFER")
                         .amount(amount.negate())
-                        .description("Internal fund transfer from "+fromAccount.getAccountNumber()+" to "+toAccount.getAccountNumber())
+                        .description("Transfer to " + toAccount.getAccountNumber() + suffix)
                         .build(),
                 Transaction.builder()
                         .accountId(toAccount.getAccountNumber())
                         .transactionType("INTERNAL_TRANSFER")
                         .amount(amount)
-                        .description("Internal fund transfer received from: "+fromAccount.getAccountNumber()).build());
+                        .description("Transfer from " + fromAccount.getAccountNumber() + suffix).build());
 
         String transactionReference = UUID.randomUUID().toString();
-        transactionService.makeInternalTransactions(transactions, transactionReference);
+        try {
+            transactionService.makeInternalTransactions(transactions, transactionReference);
+        } catch (RuntimeException e) {
+            // Money moved but the history couldn't be written: move it back so the
+            // books stay consistent, then report the failure.
+            log.error("Recording transfer {} failed, reversing it", transactionReference, e);
+            accountService.transfer(toAccount.getAccountNumber(), fromAccount.getAccountNumber(), amount);
+            throw e;
+        }
         return transactionReference;
+    }
+
+    /** authUserId is null on service-to-service calls; the gateway always sets it for users. */
+    private static void assertOwner(Account account, Long authUserId) {
+        if (authUserId != null && !authUserId.equals(account.getUserId())) {
+            throw new AccessDenied();
+        }
+    }
+
+    private boolean ownsAccount(String accountNumber, Long authUserId) {
+        ResponseEntity<Account> response = accountService.readByAccountNumber(accountNumber);
+        return response.getBody() != null && authUserId.equals(response.getBody().getUserId());
     }
 
     
     @Override
-    public FundTransferDto getTransferDetailsFromReferenceId(String referenceId) {
+    public FundTransferDto getTransferDetailsFromReferenceId(String referenceId, Long authUserId) {
 
-        return fundTransferRepository.findFundTransferByTransactionReference(referenceId)
+        FundTransferDto transfer = fundTransferRepository.findFundTransferByTransactionReference(referenceId)
                 .map(fundTransferMapper::convertToDto)
                 .orElseThrow(() -> new ResourceNotFound("Fund transfer not found", GlobalErrorCode.NOT_FOUND));
+        // Only the sender or the receiver may see a transfer.
+        if (authUserId != null
+                && !ownsAccount(transfer.getFromAccount(), authUserId)
+                && !ownsAccount(transfer.getToAccount(), authUserId)) {
+            throw new AccessDenied();
+        }
+        return transfer;
     }
 
    
     @Override
-    public List<FundTransferDto> getAllTransfersByAccountId(String accountId) {
+    public List<FundTransferDto> getAllTransfersByAccountId(String accountId, Long authUserId) {
+
+        if (authUserId != null && !ownsAccount(accountId, authUserId)) {
+            throw new AccessDenied();
+        }
 
         return fundTransferMapper.convertToDtoList(fundTransferRepository.findFundTransferByFromAccountOrToAccount(accountId, accountId));
     }

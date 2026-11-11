@@ -20,6 +20,11 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+/** Only allow same-site paths as a post-login redirect target. */
+function safeRedirect(target: string): string {
+  return target.startsWith('/') && !target.startsWith('//') ? target : '/dashboard';
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -28,18 +33,21 @@ export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const token = useAuthStore((s) => s.token);
   const toast = useUIStore((s) => s.toast);
+  const notify = useUIStore((s) => s.addNotification);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  if (isAuthenticated && token) {
-    return <Navigate to={redirect} replace />;
-  }
-
+  // All hooks must run before any early return (Rules of Hooks). Returning
+  // before useForm crashed the page the moment login set isAuthenticated.
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
+
+  if (isAuthenticated && token) {
+    return <Navigate to={safeRedirect(redirect)} replace />;
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     setServerError(null);
@@ -47,7 +55,8 @@ export default function LoginPage() {
     try {
       await login(data);
       toast('success', 'Welcome back!', 'You have signed in successfully.');
-      navigate(redirect, { replace: true });
+      notify({ type: 'security', title: 'Signed in', message: `New sign-in on this browser at ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}.` });
+      navigate(safeRedirect(redirect), { replace: true });
     } catch (err) {
       const apiErr = err as ApiError;
       setServerError(apiErr.message || 'Invalid email or password');

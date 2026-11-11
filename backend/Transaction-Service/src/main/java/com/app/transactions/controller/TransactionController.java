@@ -24,8 +24,8 @@ public class TransactionController {
 
    
     @PostMapping
-    public ResponseEntity<Response> addTransactions(@RequestBody TransactionDto transactionDto) {
-        return new ResponseEntity<>(transactionService.addTransaction(transactionDto), HttpStatus.CREATED);
+    public ResponseEntity<Response> addTransactions(@RequestBody TransactionDto transactionDto, @RequestHeader(value = "X-Auth-User-Id", required = false) Long authUserId) {
+        return new ResponseEntity<>(transactionService.addTransaction(transactionDto, authUserId), HttpStatus.CREATED);
     }
 
    
@@ -36,13 +36,13 @@ public class TransactionController {
 
    
     @GetMapping
-    public ResponseEntity<List<TransactionRequest>> getTransactions(@RequestParam String accountId) {
-        return new ResponseEntity<>(transactionService.getTransaction(accountId), HttpStatus.OK);
+    public ResponseEntity<List<TransactionRequest>> getTransactions(@RequestParam String accountId, @RequestHeader(value = "X-Auth-User-Id", required = false) Long authUserId) {
+        return new ResponseEntity<>(transactionService.getTransaction(accountId, authUserId), HttpStatus.OK);
     }
 
    
     @GetMapping("/{referenceId}")
-    public ResponseEntity<List<TransactionRequest>> getTransactionByTransactionReference(@PathVariable String referenceId) {
-        return new ResponseEntity<>(transactionService.getTransactionByTransactionReference(referenceId), HttpStatus.OK);
+    public ResponseEntity<List<TransactionRequest>> getTransactionByTransactionReference(@PathVariable String referenceId, @RequestHeader(value = "X-Auth-User-Id", required = false) Long authUserId) {
+        return new ResponseEntity<>(transactionService.getTransactionByTransactionReference(referenceId, authUserId), HttpStatus.OK);
     }
 }

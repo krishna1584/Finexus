@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowDownLeft,
@@ -16,10 +17,27 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge, TxTypeBadge } from '@/components/ui/Badge';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Drawer } from '@/components/ui/Drawer';
-import { formatCurrency, formatDate, formatDateTime, isCredit, exportToCSV, truncate } from '@/utils';
+import { AccountSwitcher } from '@/components/ui/AccountSwitcher';
+import {
+  absAmount,
+  capitalize,
+  dateValue,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  isCredit,
+  exportToCSV,
+  transactionLabel,
+  truncate,
+  txCategory,
+  TX_CATEGORY_LABELS,
+  type TxCategory,
+} from '@/utils';
 import type { TransactionRecord } from '@/types';
 
-const TX_TYPES = ['All', 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER_IN', 'TRANSFER_OUT'];
+// Filter by what the movement means to the user. Transfers are stored as
+// INTERNAL_TRANSFER on the backend; the sign decides in vs out.
+const TX_TYPES: ('All' | TxCategory)[] = ['All', 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER_IN', 'TRANSFER_OUT'];
 const TX_STATUSES = ['All', 'COMPLETED', 'PENDING', 'FAILED'];
 
 const PAGE_SIZE = 8;
@@ -28,8 +46,15 @@ export default function TransactionsPage() {
   const toast = useUIStore((s) => s.toast);
   const { primaryAccount } = useAccounts();
   const { transactions, isLoading, fetchTransactions } = useTransactions();
+  const [searchParams] = useSearchParams();
+  const urlQuery = searchParams.get('q') ?? '';
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(urlQuery);
+
+  // A search from the navbar while already on this page updates the box.
+  useEffect(() => {
+    setSearch(urlQuery);
+  }, [urlQuery]);
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFrom, setDateFrom] = useState('');
@@ -54,11 +79,12 @@ export default function TransactionsPage() {
         (t) =>
           t.referenceId.toLowerCase().includes(q) ||
           (t.comments ?? '').toLowerCase().includes(q) ||
-          t.transactionType.toLowerCase().includes(q)
+          transactionLabel(t.transactionType, t.amount).toLowerCase().includes(q) ||
+          String(absAmount(t.amount)).includes(q)
       );
     }
 
-    if (typeFilter !== 'All') list = list.filter((t) => t.transactionType === typeFilter);
+    if (typeFilter !== 'All') list = list.filter((t) => txCategory(t.transactionType, t.amount) === typeFilter);
     if (statusFilter !== 'All') list = list.filter((t) => t.transactionStatus === statusFilter);
 
     if (dateFrom || dateTo) {
@@ -72,12 +98,13 @@ export default function TransactionsPage() {
     }
 
     list.sort((a, b) => {
+      // Sort by size of the amount (debits are stored as negatives).
       if (sortBy === 'amount') {
-        return sortDir === 'desc' ? b.amount - a.amount : a.amount - b.amount;
+        const diff = absAmount(a.amount) - absAmount(b.amount);
+        return sortDir === 'desc' ? -diff : diff;
       }
-      const aDate = normalizeDate(a.localDateTime)?.getTime() ?? 0;
-      const bDate = normalizeDate(b.localDateTime)?.getTime() ?? 0;
-      return sortDir === 'desc' ? bDate - aDate : aDate - bDate;
+      const diff = dateValue(a.localDateTime) - dateValue(b.localDateTime);
+      return sortDir === 'desc' ? -diff : diff;
     });
 
     return list;
@@ -98,10 +125,10 @@ export default function TransactionsPage() {
     exportToCSV(
       filtered.map((t) => ({
         Reference: t.referenceId,
-        Type: t.transactionType,
-        Amount: t.amount,
+        Type: transactionLabel(t.transactionType, t.amount),
+        Amount: (isCredit(t.transactionType, t.amount) ? 1 : -1) * absAmount(t.amount),
         Status: t.transactionStatus,
-        Date: formatDate(t.localDateTime),
+        Date: formatDateTime(t.localDateTime),
         Description: t.comments ?? '',
       })),
       `finexus-transactions-${new Date().toISOString().slice(0, 10)}.csv`
@@ -119,14 +146,17 @@ export default function TransactionsPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-3xl font-bold">Transactions</h2>
           <p className="text-sm text-[var(--text-secondary)] mt-1">{filtered.length} filtered • {transactions.length} total</p>
         </div>
-        <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={handleExport} id="export-csv-btn">
-          Export
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <AccountSwitcher />
+          <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={handleExport} id="export-csv-btn">
+            Export
+          </Button>
+        </div>
       </div>
 
       <Card padding="md">
@@ -151,7 +181,7 @@ export default function TransactionsPage() {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="h-11 w-full appearance-none rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] pl-8 pr-8 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
             >
-              {TX_TYPES.map((t) => <option key={t} value={t}>{t === 'All' ? 'All types' : t}</option>)}
+              {TX_TYPES.map((t) => <option key={t} value={t}>{t === 'All' ? 'All types' : TX_CATEGORY_LABELS[t]}</option>)}
             </select>
             <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
           </div>
@@ -162,7 +192,7 @@ export default function TransactionsPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-11 w-full appearance-none rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] px-3 pr-8 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
             >
-              {TX_STATUSES.map((s) => <option key={s} value={s}>{s === 'All' ? 'All status' : s}</option>)}
+              {TX_STATUSES.map((s) => <option key={s} value={s}>{s === 'All' ? 'All statuses' : capitalize(s)}</option>)}
             </select>
             <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
           </div>
@@ -213,12 +243,12 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody>
-              {pageData.map((tx) => {
+              {pageData.map((tx, i) => {
                   const credit = isCredit(tx.transactionType, tx.amount);
-                  const displayAmount = Math.abs(typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount ?? 0));
+                  const displayAmount = absAmount(tx.amount);
                   return (
                     <tr
-                      key={tx.referenceId}
+                      key={`${tx.referenceId}-${tx.accountId}-${i}`}
                       onClick={() => setSelectedTx(tx)}
                       className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
                     >
@@ -234,7 +264,7 @@ export default function TransactionsPage() {
                           {credit
                             ? <ArrowDownLeft size={14} className="text-[var(--positive)]" />
                             : <ArrowUpRight size={14} className="text-[var(--negative)]" />}
-                          <TxTypeBadge type={tx.transactionType} />
+                          <TxTypeBadge type={tx.transactionType} amount={tx.amount} />
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -267,9 +297,9 @@ export default function TransactionsPage() {
           <div className="space-y-4">
             <div className="text-center">
               <p className={`text-3xl font-display font-bold tabular-nums ${isCredit(selectedTx.transactionType, selectedTx.amount) ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
-                {isCredit(selectedTx.transactionType, selectedTx.amount) ? '+' : '-'}{formatCurrency(Math.abs(typeof selectedTx.amount === 'string' ? parseFloat(selectedTx.amount) : (selectedTx.amount ?? 0)))}
+                {isCredit(selectedTx.transactionType, selectedTx.amount) ? '+' : '-'}{formatCurrency(absAmount(selectedTx.amount))}
               </p>
-              <div className="mt-2 inline-flex"><TxTypeBadge type={selectedTx.transactionType} /></div>
+              <div className="mt-2 inline-flex"><TxTypeBadge type={selectedTx.transactionType} amount={selectedTx.amount} /></div>
             </div>
             <div className="space-y-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4">
               {[

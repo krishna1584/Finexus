@@ -4,14 +4,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { AlertCircle, Save, Settings, Shield, User } from 'lucide-react';
+import { Save, Settings, Shield, User } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import { userService } from '@/services/userService';
+import { authService } from '@/services/authService';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
+import { StatusBadge } from '@/components/ui/Badge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import type { ApiError } from '@/types';
 
@@ -47,11 +48,19 @@ const TABS = [
 ];
 
 export default function ProfilePage() {
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') ?? 'profile');
+  // The tab lives in the URL, so the navbar's "Preferences" link works even
+  // when you're already on this page, and the back button behaves.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = TABS.some((t) => t.id === requestedTab) ? (requestedTab as string) : 'profile';
+  const setActiveTab = (id: string) => setSearchParams(id === 'profile' ? {} : { tab: id }, { replace: true });
   const { user, userId, setUser } = useAuthStore();
   const toast = useUIStore((s) => s.toast);
+  const notify = useUIStore((s) => s.addNotification);
+  const notificationPrefs = useUIStore((s) => s.notificationPrefs);
+  const setNotificationPref = useUIStore((s) => s.setNotificationPref);
   const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const profile = user?.userProfileDto;
 
@@ -60,6 +69,7 @@ export default function ProfilePage() {
     defaultValues: {
       firstName: profile?.firstName ?? '',
       lastName: profile?.lastName ?? '',
+      contactNo: user?.contactNo ?? '',
       address: profile?.address ?? '',
       gender: profile?.gender ?? '',
       occupation: profile?.occupation ?? '',
@@ -73,6 +83,7 @@ export default function ProfilePage() {
       profileForm.reset({
         firstName: profile.firstName ?? '',
         lastName: profile.lastName ?? '',
+        contactNo: user?.contactNo ?? '',
         address: profile.address ?? '',
         gender: profile.gender ?? '',
         occupation: profile.occupation ?? '',
@@ -80,7 +91,7 @@ export default function ProfilePage() {
         nationality: profile.nationality ?? '',
       });
     }
-  }, [profile]); // eslint-disable-line
+  }, [profile, user?.contactNo]); // eslint-disable-line
 
   const passwordForm = useForm<PasswordForm>({ resolver: zodResolver(passwordSchema) });
 
@@ -100,9 +111,19 @@ export default function ProfilePage() {
     }
   };
 
-  const onChangePassword = async (_data: PasswordForm) => {
-    toast('info', 'Coming soon', 'Password change endpoint is not available in backend yet.');
-    passwordForm.reset();
+  const onChangePassword = async (data: PasswordForm) => {
+    setChangingPassword(true);
+    try {
+      await authService.changePassword({ currentPassword: data.currentPassword, newPassword: data.newPassword });
+      toast('success', 'Password updated', 'Use your new password next time you sign in.');
+      notify({ type: 'security', title: 'Password changed', message: 'Your password was changed from this browser.' });
+      passwordForm.reset();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast('error', 'Password not changed', apiErr.message);
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const initials = profile ? `${profile.firstName?.[0] ?? ''}${profile.lastName?.[0] ?? ''}`.toUpperCase() : '??';
@@ -118,7 +139,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="font-display text-3xl font-bold">{profile?.firstName ?? ''} {profile?.lastName ?? ''}</h2>
               <p className="text-sm text-[var(--text-secondary)]">{user?.emailId}</p>
-              <Badge variant="success" dot size="sm" className="mt-2">{user?.status ?? 'ACTIVE'}</Badge>
+              {user?.status && <div className="mt-2"><StatusBadge status={user.status} /></div>}
             </div>
           </div>
         </div>
@@ -189,16 +210,11 @@ export default function ProfilePage() {
       {activeTab === 'security' && (
         <Card padding="lg">
           <CardHeader title="Security" subtitle="Manage your account access" />
-          <div className="rounded-xl border border-[var(--accent-primary)]/20 bg-[var(--accent-primary-soft)] dark:border-[var(--accent-secondary)]/30 dark:bg-[var(--accent-secondary-soft)] p-3 flex items-start gap-2 mb-4">
-            <AlertCircle size={15} className="mt-0.5 text-[var(--accent-primary)] dark:text-[var(--accent-secondary)]" />
-            <p className="text-xs text-[var(--text-primary)]">Password change is currently mocked while backend endpoint is pending.</p>
-          </div>
-
           <form id="password-form" onSubmit={passwordForm.handleSubmit(onChangePassword)} className="space-y-4">
-            <Input label="Current Password" id="current-password" showPasswordToggle error={passwordForm.formState.errors.currentPassword?.message} {...passwordForm.register('currentPassword')} />
-            <Input label="New Password" id="new-password" showPasswordToggle error={passwordForm.formState.errors.newPassword?.message} {...passwordForm.register('newPassword')} />
-            <Input label="Confirm New Password" id="confirm-password" showPasswordToggle error={passwordForm.formState.errors.confirmPassword?.message} {...passwordForm.register('confirmPassword')} />
-            <Button type="submit" icon={<Shield size={15} />} id="password-change-btn">Update Password</Button>
+            <Input label="Current Password" id="current-password" autoComplete="current-password" showPasswordToggle error={passwordForm.formState.errors.currentPassword?.message} {...passwordForm.register('currentPassword')} />
+            <Input label="New Password" id="new-password" autoComplete="new-password" showPasswordToggle error={passwordForm.formState.errors.newPassword?.message} {...passwordForm.register('newPassword')} />
+            <Input label="Confirm New Password" id="confirm-password" autoComplete="new-password" showPasswordToggle error={passwordForm.formState.errors.confirmPassword?.message} {...passwordForm.register('confirmPassword')} />
+            <Button type="submit" icon={<Shield size={15} />} loading={changingPassword} id="password-change-btn">Update Password</Button>
           </form>
         </Card>
       )}
@@ -211,28 +227,33 @@ export default function ProfilePage() {
             <ThemeToggle labeled />
 
             <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
-              <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)] mb-3">Notifications</p>
-              {[
-                { id: 'notif-transactions', label: 'Transaction alerts', desc: 'Notify on every posted transaction' },
-                { id: 'notif-transfers', label: 'Transfer confirmations', desc: 'Get a receipt for all outgoing transfers' },
-                { id: 'notif-security', label: 'Security alerts', desc: 'Login and account protection events' },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)] last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{item.label}</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">{item.desc}</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)] mb-1">In-app notifications</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-3">Choose what appears under the bell icon. Saved on this browser.</p>
+              {([
+                { key: 'transaction', label: 'Deposits & withdrawals', desc: 'When money is added to or taken from your account' },
+                { key: 'transfer', label: 'Transfers', desc: 'When you send a transfer' },
+                { key: 'security', label: 'Security', desc: 'Sign-ins and password changes' },
+              ] as const).map((item) => {
+                const on = notificationPrefs[item.key];
+                return (
+                  <div key={item.key} className="flex items-center justify-between gap-4 py-2.5 border-b border-[var(--border-subtle)] last:border-0">
+                    <div>
+                      <p className="text-sm font-medium" id={`notif-${item.key}-label`}>{item.label}</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-1">{item.desc}</p>
+                    </div>
+                    <button
+                      id={`notif-${item.key}`}
+                      role="switch"
+                      aria-checked={on}
+                      aria-labelledby={`notif-${item.key}-label`}
+                      onClick={() => setNotificationPref(item.key, !on)}
+                      className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${on ? 'bg-[var(--accent-primary)] dark:bg-[var(--accent-secondary)]' : 'bg-[var(--border-strong)]'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
                   </div>
-                  <button
-                    id={item.id}
-                    role="switch"
-                    aria-checked="true"
-                    className="relative w-11 h-6 rounded-full bg-[var(--accent-primary)] dark:bg-[var(--accent-secondary)]"
-                    onClick={() => toast('info', 'Preference saved', 'Notification setting updated.')}
-                  >
-                    <span className="absolute top-0.5 left-5 w-5 h-5 rounded-full bg-white shadow" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="rounded-2xl border border-[var(--border-subtle)] p-4">

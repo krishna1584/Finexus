@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.app.transactions.exception.AccountStatusException;
+import com.app.transactions.exception.AccessDenied;
+import com.app.transactions.exception.BadRequest;
 import com.app.transactions.exception.GlobalErrorCode;
-import com.app.transactions.exception.InsufficientBalance;
 import com.app.transactions.exception.ResourceNotFound;
 import com.app.transactions.external.AccountService;
 import com.app.transactions.model.TransactionStatus;
@@ -23,6 +23,7 @@ import com.app.transactions.model.response.TransactionRequest;
 import com.app.transactions.repository.TransactionRepository;
 import com.app.transactions.service.TransactionService;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -43,43 +44,63 @@ public class TransactionServiceImpl implements TransactionService {
 
    
     @Override
-    public Response addTransaction(TransactionDto transactionDto) {
+    public Response addTransaction(TransactionDto transactionDto, Long authUserId) {
 
-        ResponseEntity<Account> response = accountService.readByAccountNumber(transactionDto.getAccountId());
-        if (Objects.isNull(response.getBody())){
-            throw new ResourceNotFound("Requested account not found on the server", GlobalErrorCode.NOT_FOUND);
+        BigDecimal amount = transactionDto.getAmount();
+        if (amount == null || amount.signum() <= 0) {
+            throw new BadRequest("Amount must be greater than zero");
         }
-        Account account = response.getBody();
+        String type = transactionDto.getTransactionType();
+        boolean isDeposit = TransactionType.DEPOSIT.name().equals(type);
+        boolean isWithdrawal = TransactionType.WITHDRAWAL.name().equals(type);
+        if (!isDeposit && !isWithdrawal) {
+            // Transfers go through the Fund-Transfer service, never here.
+            throw new BadRequest("Transaction type must be DEPOSIT or WITHDRAWAL");
+        }
+
+        Account account = loadAccount(transactionDto.getAccountId());
+        assertOwner(account, authUserId);
+
+        // One atomic UPDATE in Account-Service: checks the account is ACTIVE and,
+        // for withdrawals, that the balance can't go below zero. No read-modify-write.
+        BigDecimal delta = isDeposit ? amount : amount.negate();
+        accountService.adjustBalance(account.getAccountNumber(), delta);
+
         Transaction transaction = transactionMapper.convertToEntity(transactionDto);
-        if(transactionDto.getTransactionType().equals(TransactionType.DEPOSIT.toString())) {
-            account.setAvailableBalance(account.getAvailableBalance().add(transactionDto.getAmount()));
-        } else if (transactionDto.getTransactionType().equals(TransactionType.WITHDRAWAL.toString())) {
-            if(!account.getAccountStatus().equals("ACTIVE")){
-                log.error("account is either inactive/closed, cannot process the transaction");
-                throw new AccountStatusException("account is inactive or closed");
-            }
-            if(account.getAvailableBalance().compareTo(transactionDto.getAmount()) < 0){
-                log.error("insufficient balance in the account");
-                throw new InsufficientBalance("Insufficient balance in the account");
-            }
-            transaction.setAmount(transactionDto.getAmount().negate());
-            account.setAvailableBalance(account.getAvailableBalance().subtract(transactionDto.getAmount()));
-        }
-
-        transaction.setTransactionType(TransactionType.valueOf(transactionDto.getTransactionType()));
+        transaction.setAmount(delta);
+        transaction.setTransactionType(TransactionType.valueOf(type));
         transaction.setComments(transactionDto.getDescription());
         transaction.setStatus(TransactionStatus.COMPLETED);
         transaction.setReferenceId(UUID.randomUUID().toString());
-
-        accountService.updateAccount(transactionDto.getAccountId(), account);
-        transactionRepository.save(transaction);
+        try {
+            transactionRepository.save(transaction);
+        } catch (RuntimeException e) {
+            // Undo the balance change so money never moves without a record.
+            log.error("Saving transaction failed, reversing balance change for {}", account.getAccountNumber(), e);
+            accountService.adjustBalance(account.getAccountNumber(), delta.negate());
+            throw e;
+        }
 
         return Response.builder()
                 .responseMessage("Transaction completed successfully")
                 .responseCode(ok).build();
     }
 
-   
+    private Account loadAccount(String accountNumber) {
+        ResponseEntity<Account> response = accountService.readByAccountNumber(accountNumber);
+        if (Objects.isNull(response.getBody())) {
+            throw new ResourceNotFound("Requested account not found on the server", GlobalErrorCode.NOT_FOUND);
+        }
+        return response.getBody();
+    }
+
+    /** authUserId is null on service-to-service calls; the gateway always sets it for users. */
+    private static void assertOwner(Account account, Long authUserId) {
+        if (authUserId != null && !authUserId.equals(account.getUserId())) {
+            throw new AccessDenied();
+        }
+    }
+
     @Override
     public Response internalTransaction(List<TransactionDto> transactionDtos, String transactionReference) {
 
@@ -92,6 +113,10 @@ public class TransactionServiceImpl implements TransactionService {
             transaction.setStatus(TransactionStatus.COMPLETED);
             transaction.setReferenceId(transactionReference);
         });
+        // The DTO field is "description" but the entity stores "comments".
+        for (int i = 0; i < transactions.size(); i++) {
+            transactions.get(i).setComments(transactionDtos.get(i).getDescription());
+        }
 
         // Save all the completed transactions to the transaction repository
         transactionRepository.saveAll(transactions);
@@ -104,7 +129,11 @@ public class TransactionServiceImpl implements TransactionService {
 
    
     @Override
-    public List<TransactionRequest> getTransaction(String accountId) {
+    public List<TransactionRequest> getTransaction(String accountId, Long authUserId) {
+
+        if (authUserId != null) {
+            assertOwner(loadAccount(accountId), authUserId);
+        }
 
         return transactionRepository.findTransactionByAccountId(accountId)
                 .stream().map(transaction -> {
@@ -119,10 +148,14 @@ public class TransactionServiceImpl implements TransactionService {
 
    
     @Override
-    public List<TransactionRequest> getTransactionByTransactionReference(String transactionReference) {
+    public List<TransactionRequest> getTransactionByTransactionReference(String transactionReference, Long authUserId) {
 
+        // A transfer has two legs (sender and receiver); only show the caller the legs on their own accounts.
         return transactionRepository.findTransactionByReferenceId(transactionReference)
-                .stream().map(transaction -> {
+                .stream()
+                .filter(transaction -> authUserId == null
+                        || authUserId.equals(loadAccount(transaction.getAccountId()).getUserId()))
+                .map(transaction -> {
                     TransactionRequest transactionRequest = new TransactionRequest();
                     BeanUtils.copyProperties(transaction, transactionRequest);
                     transactionRequest.setTransactionStatus(transaction.getStatus().toString());

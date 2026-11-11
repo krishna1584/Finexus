@@ -55,6 +55,8 @@ export interface UserProfileDto {
 export interface UserDto {
   userId: number;
   emailId: string;
+  /** Phone number (User.contactNo on the backend) */
+  contactNo?: string;
   password?: string;
   identificationNumber: string;
   authId?: string;
@@ -123,6 +125,14 @@ export interface FundTransferRequest {
   fromAccount: string;
   toAccount: string;
   amount: number;
+  /** Optional note, saved on both sides of the transfer */
+  description?: string;
+}
+
+/** POST /api/auth/change-password — request body */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /** POST /fund-transfers — response body (FundTransferResponse.java) */
@@ -137,7 +147,7 @@ export interface FundTransferDto {
   fromAccount: string;
   toAccount: string;
   amount: number;
-  status: string; // 'PENDING' | 'COMPLETED' | 'FAILED'
+  status: string; // 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED'
   transferType: string;
   transferredOn: string | number[];
 }
@@ -170,7 +180,16 @@ export interface Notification {
   message: string;
   read: boolean;
   timestamp: string;
-  type: 'transfer' | 'account' | 'system';
+  type: NotificationType;
+}
+
+/** Each type can be switched off in Profile → Preferences (except 'account'). */
+export type NotificationType = 'transaction' | 'transfer' | 'security' | 'account';
+
+export interface NotificationPrefs {
+  transaction: boolean;
+  transfer: boolean;
+  security: boolean;
 }
 
 export type AuthMode = 'LOCAL_JWT' | 'OAUTH2';

@@ -3,6 +3,7 @@ package com.app.user.service.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.app.user.service.model.Status;
 import com.app.user.service.model.dto.CreateUser;
+import com.app.user.service.model.dto.auth.ChangePasswordRequest;
 import com.app.user.service.model.dto.auth.JwtResponse;
 import com.app.user.service.model.dto.auth.LoginRequest;
 import com.app.user.service.model.dto.response.Response;
@@ -120,7 +122,6 @@ public class AuthController {
             Account accountRequest = Account.builder()
                     .userId(savedUser.getId())
                     .accountType("SAVINGS")
-                    .accountStatus("PENDING")
                     .build();
             accountService.createAccount(accountRequest);
             log.info("Auto-created SAVINGS account for user id={} ({})", savedUser.getId(), nextIdent);
@@ -132,5 +133,34 @@ public class AuthController {
                 .responseCode("200")
                 .responseMessage("User registered successfully!")
                 .build());
+    }
+
+    /**
+     * Change the signed-in user's password. The user id comes from the API
+     * gateway (taken from the verified login token), never from the request body.
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Response> changePassword(
+            @RequestHeader(value = "X-Auth-User-Id", required = false) Long authUserId,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        if (authUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Response.builder().responseCode("401").responseMessage("Please sign in").build());
+        }
+        User user = userRepository.findById(authUserId).orElse(null);
+        if (user == null || user.getPassword() == null
+                || !encoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(Response.builder().responseCode("400").responseMessage("Current password is incorrect").build());
+        }
+        if (encoder.matches(request.getNewPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(Response.builder().responseCode("400")
+                            .responseMessage("New password must be different from the current one").build());
+        }
+        user.setPassword(encoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("Password changed for user id={}", authUserId);
+        return ResponseEntity.ok(Response.builder().responseCode("200").responseMessage("Password updated").build());
     }
 }

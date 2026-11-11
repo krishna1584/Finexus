@@ -4,8 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import { authService } from '@/services/authService';
 import { userService } from '@/services/userService';
-import apiClient from '@/services/apiClient';
-import type { LoginRequest, CreateUserRequest, ApiError, UserDto } from '@/types';
+import type { LoginRequest, CreateUserRequest, ApiError } from '@/types';
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -15,25 +14,9 @@ export function useAuth() {
   const login = useCallback(
     async (credentials: LoginRequest): Promise<void> => {
       const data = await authService.login(credentials);
-      
-      let userIdVal = data.id || (data as any).userId;
-      if (!userIdVal) {
-        try {
-          console.log('data.id missing, performing fallback email lookup for:', credentials.email);
-          const response = await apiClient.get<UserDto[]>('/api/users');
-          const matchedUser = response.data.find(
-            (u) => u.emailId.toLowerCase() === credentials.email.toLowerCase()
-          );
-          if (matchedUser) {
-            userIdVal = matchedUser.userId;
-            data.id = userIdVal;
-            console.log('Fallback successful. Found matching userId:', userIdVal);
-          }
-        } catch (e) {
-          console.error('Fallback email lookup failed:', e);
-        }
-      }
-
+      // The login response always carries the user id. (The old fallback that
+      // downloaded every user to find it has been removed; that list is no
+      // longer reachable from the browser.)
       setAuth(data);
       // Fetch user profile immediately
       try {

@@ -4,6 +4,20 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import type { ProxyOptions } from 'vite'
+
+const GATEWAY = 'http://localhost:8088'
+
+/**
+ * Some API prefixes (e.g. /transactions) are also front-end page routes.
+ * A browser navigation or refresh asks for text/html, so serve the SPA for
+ * those instead of forwarding them to the gateway (which returned a 502).
+ */
+const apiProxy: ProxyOptions = {
+  target: GATEWAY,
+  changeOrigin: true,
+  bypass: (req) => (req.headers.accept?.includes('text/html') ? '/index.html' : undefined),
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -19,22 +33,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8088',
-        changeOrigin: true,
-      },
-      '/accounts': {
-        target: 'http://localhost:8088',
-        changeOrigin: true,
-      },
-      '/transactions': {
-        target: 'http://localhost:8088',
-        changeOrigin: true,
-      },
-      '/fund-transfers': {
-        target: 'http://localhost:8088',
-        changeOrigin: true,
-      },
+      '/api': apiProxy,
+      '/accounts': apiProxy,
+      '/transactions': apiProxy,
+      '/fund-transfers': apiProxy,
     },
   },
   test: {

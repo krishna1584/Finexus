@@ -16,7 +16,7 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 async function getUserById(userId: number): Promise<UserDto> {
   if (USE_MOCK) {
     await delay(500);
-    return { ...MOCK_USER, userId };
+    return { ...MOCK_USER, userId, userProfileDto: { ...MOCK_USER.userProfileDto } };
   }
   const response = await apiClient.get<UserDto>(`/api/users/${userId}`);
   return response.data;
@@ -34,7 +34,10 @@ async function getUserByAuthId(authId: string): Promise<UserDto> {
 async function updateUser(userId: number, data: UserUpdateRequest): Promise<BackendResponse> {
   if (USE_MOCK) {
     await delay(600);
-    return { responseCode: '200', responseMessage: 'Profile updated successfully!' };
+    const { contactNo, ...profile } = data;
+    MOCK_USER.contactNo = contactNo;
+    Object.assign(MOCK_USER.userProfileDto, profile);
+    return { responseCode: '200', responseMessage: 'user updated successfully' };
   }
   const response = await apiClient.put<BackendResponse>(`/api/users/${userId}`, data);
   return response.data;

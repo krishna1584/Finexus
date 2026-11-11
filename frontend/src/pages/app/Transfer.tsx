@@ -19,10 +19,21 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Badge } from '@/components/ui/Badge';
+import { StatusBadge } from '@/components/ui/Badge';
+import { AccountSwitcher } from '@/components/ui/AccountSwitcher';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { formatCurrency, formatDateTime, maskAccountNumber } from '@/utils';
-import type { FundTransferResponse, ApiError } from '@/types';
+import type { FundTransferDto, ApiError } from '@/types';
+
+interface Receipt {
+  reference: string;
+  fromAccount: string;
+  toAccount: string;
+  amount: number;
+  description: string;
+  transferredOn: string | number[] | null;
+  status: string | null;
+}
 
 const transferSchema = z.object({
   toAccount: z
@@ -36,14 +47,15 @@ const transferSchema = z.object({
 type TransferForm = z.infer<typeof transferSchema>;
 
 export default function TransferPage() {
-  const { primaryAccount, isLoading: accountLoading, refreshAccounts } = useAccounts();
+  const { primaryAccount, isLoading: accountLoading, loaded, refreshAccounts } = useAccounts();
   const { fetchTransactions } = useTransactions();
   const toast = useUIStore((s) => s.toast);
+  const notify = useUIStore((s) => s.addNotification);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState<TransferForm | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [receipt, setReceipt] = useState<FundTransferResponse | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
 
   const {
     register,
@@ -58,10 +70,15 @@ export default function TransferPage() {
   const amount = watch('amount');
   const parsedAmount = parseFloat(amount || '0');
   const hasSufficientFunds = !primaryAccount || parsedAmount <= 0 || parsedAmount <= primaryAccount.availableBalance;
+  const isActive = primaryAccount?.accountStatus === 'ACTIVE';
 
   const onPreSubmit = (data: TransferForm) => {
     if (!primaryAccount?.accountNumber) {
       toast('error', 'No account found', 'Cannot initiate transfer without an active account.');
+      return;
+    }
+    if (data.toAccount.trim().toUpperCase() === primaryAccount.accountNumber.toUpperCase()) {
+      toast('error', 'Same account', 'You cannot transfer to the account you are sending from.');
       return;
     }
     setFormData(data);
@@ -71,20 +88,44 @@ export default function TransferPage() {
   const onConfirm = async () => {
     if (!formData || !primaryAccount?.accountNumber) return;
     setIsLoading(true);
+    const fromAccount = primaryAccount.accountNumber;
+    const amount = parseFloat(formData.amount);
     try {
       const result = await fundTransferService.fundTransfer({
-        fromAccount: primaryAccount.accountNumber,
-        toAccount: formData.toAccount,
-        amount: parseFloat(formData.amount),
+        fromAccount,
+        toAccount: formData.toAccount.trim(),
+        amount,
+        description: formData.description?.trim() || undefined,
       });
-      // Refresh balance and transaction list to reflect the transfer immediately
-      await refreshAccounts();
-      if (primaryAccount?.accountNumber) {
-        await fetchTransactions(primaryAccount.accountNumber);
+
+      // Build the receipt from the server's own record (time, status, resolved
+      // recipient account) instead of values made up in the browser.
+      let record: FundTransferDto | null = null;
+      try {
+        record = await fundTransferService.getTransferByReference(result.transactionId);
+      } catch {
+        // The transfer itself succeeded; fall back to what we know for sure.
       }
-      setReceipt(result);
+      setReceipt({
+        reference: result.transactionId,
+        fromAccount: record?.fromAccount ?? fromAccount,
+        toAccount: record?.toAccount ?? formData.toAccount.trim(),
+        amount: record?.amount ?? amount,
+        description: formData.description?.trim() ?? '',
+        transferredOn: record?.transferredOn ?? null,
+        status: record?.status ?? null,
+      });
       setShowConfirm(false);
       toast('success', 'Transfer successful', result.message);
+      notify({
+        type: 'transfer',
+        title: 'Transfer sent',
+        message: `${formatCurrency(amount)} to ${record?.toAccount ?? formData.toAccount.trim()}`,
+      });
+
+      // Refresh balance and transaction list to reflect the transfer immediately
+      await refreshAccounts();
+      await fetchTransactions(fromAccount);
     } catch (err) {
       const apiErr = err as ApiError;
       toast('error', 'Transfer failed', apiErr.message);
@@ -106,25 +147,26 @@ export default function TransferPage() {
             <p className="text-sm text-[var(--text-secondary)] mt-1">Funds have been sent successfully.</p>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4 space-y-3 print-receipt">
+          <div className="print-area rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4 space-y-3">
+            <p className="print-only text-lg font-bold mb-2">Finexus · Transfer receipt</p>
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">From</span>
-              <span className="font-mono text-xs">{maskAccountNumber(primaryAccount?.accountNumber)}</span>
+              <span className="font-mono text-xs">{maskAccountNumber(receipt.fromAccount)}</span>
             </div>
             <div className="flex items-center justify-center text-[var(--text-secondary)]"><ArrowRight size={14} /></div>
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">To</span>
-              <span className="font-mono text-xs">{formData?.toAccount}</span>
+              <span className="font-mono text-xs">{receipt.toAccount}</span>
             </div>
 
             <hr className="border-[var(--border-subtle)]" />
-            <Line label="Reference" value={receipt.transactionId} mono />
-            <Line label="Amount" value={formatCurrency(parseFloat(formData?.amount ?? '0'))} strong />
-            <Line label="Description" value={formData?.description || '—'} />
-            <Line label="Timestamp" value={formatDateTime(new Date().toISOString())} />
+            <Line label="Reference" value={receipt.reference} mono />
+            <Line label="Amount" value={formatCurrency(receipt.amount)} strong />
+            <Line label="Note" value={receipt.description || '—'} />
+            <Line label="Date & time" value={receipt.transferredOn ? formatDateTime(receipt.transferredOn) : 'Just now'} />
             <div className="flex items-center justify-between">
               <span className="text-sm text-[var(--text-secondary)]">Status</span>
-              <Badge variant="success" dot>Completed</Badge>
+              {receipt.status ? <StatusBadge status={receipt.status} /> : <StatusBadge status="SUCCESS" />}
             </div>
           </div>
 
@@ -139,12 +181,15 @@ export default function TransferPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="font-display text-3xl font-bold">Transfer Funds</h2>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">Secure instant transfers to accounts or Finexus IDs.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-3xl font-bold">Transfer Funds</h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Send money to any Finexus account number or customer ID (e.g. FIN2).</p>
+        </div>
+        <AccountSwitcher />
       </div>
 
-      {accountLoading ? (
+      {accountLoading && !loaded ? (
         <SkeletonCard />
       ) : primaryAccount ? (
         <Card padding="md" className="bg-[var(--hero-bg)]">
@@ -165,7 +210,13 @@ export default function TransferPage() {
           </div>
         </Card>
       ) : (
-        <Card padding="md"><p className="text-sm text-[var(--text-secondary)]">No account found.</p></Card>
+        <Card padding="md"><p className="text-sm text-[var(--text-secondary)]">No account found. Open one from the dashboard.</p></Card>
+      )}
+
+      {primaryAccount && !isActive && (
+        <div className="rounded-xl border border-[var(--negative)]/25 bg-[var(--negative)]/10 p-3 text-sm text-[var(--negative)]">
+          This account is {(primaryAccount.accountStatus ?? '').toLowerCase()}. Choose an active account to send money.
+        </div>
       )}
 
       <Card padding="lg">
@@ -195,9 +246,11 @@ export default function TransferPage() {
           )}
 
           <Input
-            label="Description"
+            label="Note (optional)"
             id="transfer-description"
-            placeholder="Invoice payment"
+            placeholder="Rent for November"
+            maxLength={140}
+            hint="Shown in both your and the recipient's transaction history."
             {...register('description')}
           />
 
@@ -209,7 +262,7 @@ export default function TransferPage() {
             type="submit"
             fullWidth
             icon={<ArrowLeftRight size={16} />}
-            disabled={(!hasSufficientFunds && parsedAmount > 0) || !primaryAccount}
+            disabled={(!hasSufficientFunds && parsedAmount > 0) || !primaryAccount || !isActive}
             id="transfer-review-btn"
           >
             Review Transfer
@@ -235,7 +288,7 @@ export default function TransferPage() {
             <Line label="From" value={maskAccountNumber(primaryAccount?.accountNumber)} mono />
             <Line label="To" value={formData?.toAccount || ''} mono />
             <Line label="Amount" value={formatCurrency(parseFloat(formData?.amount ?? '0'))} strong />
-            <Line label="Description" value={formData?.description || '—'} />
+            <Line label="Note" value={formData?.description || '—'} />
           </div>
           <p className="text-xs text-[var(--text-secondary)] text-center">Transfers are processed immediately and cannot be reversed.</p>
         </div>

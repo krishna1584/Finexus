@@ -33,6 +33,7 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [query, setQuery] = useState('');
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
@@ -83,7 +84,15 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
       <h1 className="text-[var(--text-primary)] font-display font-semibold text-lg hidden sm:block">{title}</h1>
 
       {/* Search */}
-      <div className="flex-1 max-w-xs hidden lg:flex items-center ml-4">
+      <form
+        role="search"
+        className="flex-1 max-w-xs hidden lg:flex items-center ml-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const q = query.trim();
+          navigate(q ? `/transactions?q=${encodeURIComponent(q)}` : '/transactions');
+        }}
+      >
         <div className="relative w-full">
           <Search
             size={15}
@@ -91,11 +100,14 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
           />
           <input
             type="search"
+            aria-label="Search transactions"
             placeholder="Search transactions..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] rounded-xl pl-9 pr-4 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
           />
         </div>
-      </div>
+      </form>
 
       <div className="flex-1" />
 
@@ -135,7 +147,7 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <div className="max-h-72 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center text-[var(--text-secondary)] text-sm">
-                    No notifications
+                    Nothing yet. Deposits, transfers and sign-ins will show up here.
                   </div>
                 ) : (
                   notifications.map((n) => (

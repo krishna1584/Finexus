@@ -31,6 +31,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	
+	@ExceptionHandler(AccessDenied.class)
+	public ResponseEntity<Object> handleAccessDenied(AccessDenied ex) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse.builder()
+				.errorCode(ex.getErrorCode()).message(ex.getErrorMessage()).build());
+	}
+
 	@ExceptionHandler(GlobalException.class)
 	public ResponseEntity<Object> handleGlobalException(GlobalException globalException) {
 		return ResponseEntity.badRequest().body(ErrorResponse.builder().errorCode(globalException.getErrorCode())

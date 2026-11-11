@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { JwtResponse, UserDto } from '@/types';
+import { useAccountStore } from './useAccountStore';
+import { useTransactionStore } from './useTransactionStore';
+import { useUIStore } from './useUIStore';
 
 interface AuthState {
   token: string | null;
@@ -28,10 +31,9 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (data: JwtResponse) => {
-        console.log('setAuth received JwtResponse data:', data);
         set({
           token: data.token,
-          userId: data.id || (data as any).userId || (data as any).userIdFromToken, // fallback options
+          userId: data.id,
           email: data.email,
           username: data.username,
           roles: data.roles,
@@ -41,7 +43,12 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user: UserDto) => set({ user }),
 
-      logout: () =>
+      logout: () => {
+        // Drop the previous user's cached accounts and transactions so the next
+        // person to sign in on this browser never sees them.
+        useAccountStore.getState().reset();
+        useTransactionStore.getState().reset();
+        useUIStore.getState().clearNotifications();
         set({
           token: null,
           userId: null,
@@ -50,7 +57,8 @@ export const useAuthStore = create<AuthState>()(
           roles: [],
           user: null,
           isAuthenticated: false,
-        }),
+        });
+      },
     }),
     {
       name: 'finexus-auth',

@@ -279,14 +279,38 @@ body {
   box-shadow: var(--shadow-card) !important;
 }
 
-/* Print styles for transfer receipts */
+/* Print styles for transfer receipts.
+   When a page contains a .print-area, print only that box (no sidebar, navbar
+   or background), in plain black on white. */
+.print-only { display: none; }
+
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
-  body { background: white; color: black; }
-}
 
-.print-only { display: none; }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body * { visibility: hidden; }
+  .print-area, .print-area * {
+    visibility: visible;
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: 560px;
+    margin: 24px;
+    background: #fff !important;
+    border: 1px solid #999 !important;
+    box-shadow: none !important;
+  }
+}
 
 .bg-grid {
   background-image: linear-gradient(to right, rgba(120, 132, 163, 0.1) 1px, transparent 1px),

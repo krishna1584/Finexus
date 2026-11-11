@@ -9,17 +9,15 @@
 
 import apiClient from './apiClient';
 import type { FundTransferRequest, FundTransferResponse, FundTransferDto } from '@/types';
-import { MOCK_TRANSFERS } from './mock/mockData';
+import { MOCK_TRANSFERS, mockTransfer } from './mock/mockData';
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
 async function fundTransfer(data: FundTransferRequest): Promise<FundTransferResponse> {
   if (USE_MOCK) {
     await delay(900);
-    return {
-      transactionId: 'TXN' + Date.now(),
-      message: `Transfer of ${data.amount} from ${data.fromAccount} to ${data.toAccount} completed successfully.`,
-    };
+    const reference = mockTransfer(data.fromAccount, data.toAccount, data.amount, data.description);
+    return { transactionId: reference, message: 'Fund transfer was successful' };
   }
   const response = await apiClient.post<FundTransferResponse>('/fund-transfers', data);
   return response.data;

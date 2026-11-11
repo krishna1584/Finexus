@@ -3,54 +3,29 @@ import { useAccountStore } from '@/store/useAccountStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import { accountService } from '@/services/accountService';
-import { MOCK_ACCOUNTS } from '@/services/mock/mockData';
 import type { ApiError } from '@/types';
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-
-// Session lock to prevent duplicate concurrent account creation requests for the same user
-const creationLocks = new Set<number>();
-
+/**
+ * Accounts for the signed-in user.
+ *
+ * Accounts are created by the backend when the user registers. The front end
+ * no longer creates one silently when the list is empty; the dashboard shows
+ * an "Open account" action instead.
+ */
 export function useAccounts() {
-  const { accounts, primaryAccount, isLoading, error, setAccounts, setPrimaryAccount, setLoading, setError } =
+  const { accounts, primaryAccount, isLoading, loaded, error, setAccounts, selectAccount, setLoading, setError } =
     useAccountStore();
   const userId = useAuthStore((s) => s.userId);
   const toast = useUIStore((s) => s.toast);
+  const notify = useUIStore((s) => s.addNotification);
 
-  const fetchAccounts = useCallback(async () => {
+  /** Always fetches fresh data from the server (after deposits, transfers, etc.). */
+  const refreshAccounts = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     setError(null);
     try {
-      if (USE_MOCK) {
-        // Mock returns all accounts for the user
-        const all = MOCK_ACCOUNTS.filter((a) => a.userId === userId || USE_MOCK);
-        setAccounts(all);
-        setPrimaryAccount(all[0] ?? null);
-      } else {
-        // Fetch all accounts for the user
-        let allAccounts = await accountService.getAllAccountsByUserId(userId);
-
-        // If no accounts exist yet, auto-create a default SAVINGS account
-        if (allAccounts.length === 0 && !creationLocks.has(userId)) {
-          creationLocks.add(userId);
-          try {
-            await accountService.createAccount({
-              userId,
-              accountType: 'SAVINGS',
-              availableBalance: 0,
-            });
-            // Re-fetch after creation
-            allAccounts = await accountService.getAllAccountsByUserId(userId);
-          } catch (err) {
-            creationLocks.delete(userId);
-            throw err;
-          }
-        }
-
-        setAccounts(allAccounts);
-        setPrimaryAccount(allAccounts[0] ?? null);
-      }
+      setAccounts(await accountService.getAllAccountsByUserId(userId));
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.message);
@@ -58,47 +33,61 @@ export function useAccounts() {
     } finally {
       setLoading(false);
     }
-  }, [userId, setAccounts, setPrimaryAccount, setLoading, setError, toast]);
+  }, [userId, setAccounts, setLoading, setError, toast]);
 
-  // Auto-fetch on mount if no data
+  // Load once per session; pages call refreshAccounts when they need fresh balances.
   useEffect(() => {
-    if (userId && accounts.length === 0 && !isLoading) {
-      fetchAccounts();
+    if (userId && !loaded && !isLoading) {
+      refreshAccounts();
     }
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // fetchAccounts only re-fetches if no accounts are loaded yet (used for initial load).
-  // refreshAccounts always fetches fresh data from the server (used after transfers, etc.).
-  const refreshAccounts = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      if (USE_MOCK) {
-        const all = MOCK_ACCOUNTS.filter((a) => a.userId === userId || USE_MOCK);
-        setAccounts(all);
-        setPrimaryAccount(all[0] ?? null);
-      } else {
-        const allAccounts = await accountService.getAllAccountsByUserId(userId);
-        setAccounts(allAccounts);
-        setPrimaryAccount(allAccounts[0] ?? null);
+  const openAccount = useCallback(
+    async (accountType: string): Promise<boolean> => {
+      if (!userId) return false;
+      try {
+        const res = await accountService.createAccount({ userId, accountType, availableBalance: 0 });
+        toast('success', 'Account opened', res.responseMessage);
+        notify({ type: 'account', title: 'New account opened', message: res.responseMessage });
+        await refreshAccounts();
+        return true;
+      } catch (err) {
+        const apiErr = err as ApiError;
+        toast('error', 'Could not open account', apiErr.message);
+        return false;
       }
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setError(apiErr.message);
-      toast('error', 'Failed to refresh accounts', apiErr.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, setAccounts, setPrimaryAccount, setLoading, setError, toast]);
+    },
+    [userId, refreshAccounts, toast, notify]
+  );
+
+  const closeAccount = useCallback(
+    async (accountNumber: string): Promise<boolean> => {
+      try {
+        await accountService.closeAccount(accountNumber);
+        toast('success', 'Account closed', `Account ${accountNumber} has been closed.`);
+        notify({ type: 'account', title: 'Account closed', message: `Account ${accountNumber} was closed.` });
+        await refreshAccounts();
+        return true;
+      } catch (err) {
+        const apiErr = err as ApiError;
+        toast('error', 'Could not close account', apiErr.message);
+        return false;
+      }
+    },
+    [refreshAccounts, toast, notify]
+  );
 
   return {
     accounts,
     primaryAccount,
     isLoading,
+    loaded,
     error,
-    fetchAccounts,
     refreshAccounts,
+    /** Kept for existing callers; same as refreshAccounts. */
+    fetchAccounts: refreshAccounts,
+    selectAccount,
+    openAccount,
+    closeAccount,
   };
 }
-

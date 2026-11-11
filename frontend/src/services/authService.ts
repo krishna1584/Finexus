@@ -11,7 +11,8 @@
  */
 
 import apiClient from './apiClient';
-import type { LoginRequest, JwtResponse, CreateUserRequest, BackendResponse } from '@/types';
+import type { LoginRequest, JwtResponse, CreateUserRequest, BackendResponse, ChangePasswordRequest } from '@/types';
+import { MOCK_PASSWORD, setMockPassword } from './mock/mockData';
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
@@ -32,7 +33,7 @@ async function registerLocal(data: CreateUserRequest): Promise<BackendResponse> 
 
 async function loginMock(credentials: LoginRequest): Promise<JwtResponse> {
   await delay(700);
-  if (credentials.email === 'demo@finexus.com' && credentials.password === 'password123') {
+  if (credentials.email === 'demo@finexus.com' && credentials.password === MOCK_PASSWORD) {
     return {
       token: 'mock.jwt.token.eyJhbGciOiJIUzI1NiJ9',
       type: 'Bearer',
@@ -51,11 +52,29 @@ async function registerMock(_data: CreateUserRequest): Promise<BackendResponse> 
   return { responseCode: '200', responseMessage: 'User registered successfully!' };
 }
 
+async function changePasswordLocal(data: ChangePasswordRequest): Promise<BackendResponse> {
+  const response = await apiClient.post<BackendResponse>('/api/auth/change-password', data);
+  return response.data;
+}
+
+async function changePasswordMock(data: ChangePasswordRequest): Promise<BackendResponse> {
+  await delay(600);
+  if (data.currentPassword !== MOCK_PASSWORD) {
+    return Promise.reject({ status: 400, message: 'Current password is incorrect' });
+  }
+  if (data.newPassword === MOCK_PASSWORD) {
+    return Promise.reject({ status: 400, message: 'New password must be different from the current one' });
+  }
+  setMockPassword(data.newPassword);
+  return { responseCode: '200', responseMessage: 'Password updated' };
+}
+
 // ---- Public API (strategy pattern) ----
 
 export const authService = {
   login: USE_MOCK ? loginMock : loginLocal,
   register: USE_MOCK ? registerMock : registerLocal,
+  changePassword: USE_MOCK ? changePasswordMock : changePasswordLocal,
 };
 
 // ---- Utility ----

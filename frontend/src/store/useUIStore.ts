@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Theme, Toast, ToastType, Notification } from '@/types';
+import type { Theme, Toast, ToastType, Notification, NotificationPrefs } from '@/types';
 
 interface UIState {
   theme: Theme;
   sidebarCollapsed: boolean;
   toasts: Toast[];
   notifications: Notification[];
+  notificationPrefs: NotificationPrefs;
 
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -20,26 +21,11 @@ interface UIState {
   addNotification: (notification: Omit<Notification, 'id' | 'read' | 'timestamp'>) => void;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
+  clearNotifications: () => void;
+  setNotificationPref: (key: keyof NotificationPrefs, enabled: boolean) => void;
 }
 
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'notif-1',
-    title: 'Welcome to Finexus',
-    message: 'Your account is set up and ready to use.',
-    read: false,
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    type: 'system',
-  },
-  {
-    id: 'notif-2',
-    title: 'Security tip',
-    message: 'Enable 2-factor authentication for extra security.',
-    read: false,
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    type: 'system',
-  },
-];
+const DEFAULT_PREFS: NotificationPrefs = { transaction: true, transfer: true, security: true };
 
 export const useUIStore = create<UIState>()(
   persist(
@@ -47,7 +33,9 @@ export const useUIStore = create<UIState>()(
       theme: 'dark',
       sidebarCollapsed: false,
       toasts: [],
-      notifications: INITIAL_NOTIFICATIONS,
+      // Filled by real events (deposits, transfers, sign-ins, ...); starts empty.
+      notifications: [],
+      notificationPrefs: DEFAULT_PREFS,
 
       setTheme: (theme: Theme) => {
         set({ theme });
@@ -82,14 +70,16 @@ export const useUIStore = create<UIState>()(
         get().addToast({ type, title, message, duration }),
 
       addNotification: (notif) => {
-        const id = `notif-${Date.now()}`;
+        // Respect the user's switches in Profile → Preferences ('account' is always on).
+        if (notif.type !== 'account' && !get().notificationPrefs[notif.type]) return;
+        const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         const notification: Notification = {
           id,
           read: false,
           timestamp: new Date().toISOString(),
           ...notif,
         };
-        set((s) => ({ notifications: [notification, ...s.notifications] }));
+        set((s) => ({ notifications: [notification, ...s.notifications].slice(0, 50) }));
       },
 
       markNotificationRead: (id) =>
@@ -103,12 +93,20 @@ export const useUIStore = create<UIState>()(
         set((s) => ({
           notifications: s.notifications.map((n) => ({ ...n, read: true })),
         })),
+
+      clearNotifications: () => set({ notifications: [] }),
+
+      setNotificationPref: (key, enabled) =>
+        set((s) => ({ notificationPrefs: { ...s.notificationPrefs, [key]: enabled } })),
     }),
     {
       name: 'finexus-ui',
       partialize: (state) => ({
         theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,
+        notificationPrefs: state.notificationPrefs,
+        // Survive reloads; cleared on sign-out so they never carry over to another user.
+        notifications: state.notifications,
       }),
     }
   )

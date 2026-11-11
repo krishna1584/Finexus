@@ -18,4 +18,7 @@ public class FundTransferRequest {
     private String toAccount;
 
     private BigDecimal amount;
+
+    /** Optional note from the sender, saved on both sides of the transfer. */
+    private String description;
 }

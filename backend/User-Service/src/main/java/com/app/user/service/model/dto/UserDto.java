@@ -17,6 +17,9 @@ public class UserDto {
 
     private String emailId;
 
+    private String contactNo;
+
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private String identificationNumber;

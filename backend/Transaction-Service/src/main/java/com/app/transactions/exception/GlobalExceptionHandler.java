@@ -11,6 +11,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
    
+    @ExceptionHandler(AccessDenied.class)
+    public ResponseEntity<Object> handleAccessDenied(AccessDenied ex) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder().errorCode(ex.getErrorCode()).message(ex.getMessage()).build());
+    }
+
     @ExceptionHandler(GlobalException.class)
     public ResponseEntity<Object> handleGlobalException(GlobalException globalException) {
 

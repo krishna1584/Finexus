@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useAuthStore } from '@/store/useAuthStore';
+import { userService } from '@/services/userService';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
-import { ToastContainer } from '@/components/ui/Toast';
 import { X, Landmark, LayoutDashboard, PiggyBank, ArrowLeftRight, Receipt, User } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -16,6 +17,27 @@ const mobileNavItems = [
 
 export function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const userId = useAuthStore((s) => s.userId);
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+
+  // The profile isn't persisted across reloads (only the token is), so fetch
+  // it again whenever we're signed in but don't have it in memory.
+  useEffect(() => {
+    if (!userId || user) return;
+    let cancelled = false;
+    userService
+      .getUserById(userId)
+      .then((profile) => {
+        if (!cancelled) setUser(profile);
+      })
+      .catch(() => {
+        // Non-fatal: the header falls back to a generic name.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, user, setUser]);
 
   return (
     <div className="flex h-screen bg-[var(--bg-primary)] overflow-hidden relative">
@@ -80,9 +102,6 @@ export function AppShell() {
           </div>
         </main>
       </div>
-
-      {/* Global Toast Container */}
-      <ToastContainer />
     </div>
   );
 }

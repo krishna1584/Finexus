@@ -104,22 +104,65 @@ export function isCredit(transactionType: string, amount?: number | string | nul
   return ['DEPOSIT', 'TRANSFER_IN'].includes(type);
 }
 
-export function transactionSign(transactionType: string): '+' | '-' {
-  return isCredit(transactionType) ? '+' : '-';
+/**
+ * What kind of movement a transaction is, from the account holder's point of view.
+ * The backend stores transfers as INTERNAL_TRANSFER on both legs; the sign of
+ * the amount says which side you are on.
+ */
+export type TxCategory = 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'OTHER';
+
+export function txCategory(transactionType: string, amount?: number | string | null): TxCategory {
+  const type = transactionType?.toUpperCase();
+  if (type === 'DEPOSIT' || type === 'WITHDRAWAL' || type === 'TRANSFER_IN' || type === 'TRANSFER_OUT') {
+    return type;
+  }
+  if (type === 'INTERNAL_TRANSFER' || type === 'EXTERNAL_TRANSFER') {
+    return isCredit('INTERNAL_TRANSFER', amount) ? 'TRANSFER_IN' : 'TRANSFER_OUT';
+  }
+  return 'OTHER';
 }
 
-export function transactionColor(transactionType: string): string {
-  return isCredit(transactionType) ? 'var(--positive)' : 'var(--negative)';
+export const TX_CATEGORY_LABELS: Record<TxCategory, string> = {
+  DEPOSIT: 'Deposit',
+  WITHDRAWAL: 'Withdrawal',
+  TRANSFER_IN: 'Transfer in',
+  TRANSFER_OUT: 'Transfer out',
+  OTHER: 'Other',
+};
+
+export function transactionLabel(type: string, amount?: number | string | null): string {
+  const category = txCategory(type, amount);
+  return category === 'OTHER' ? capitalize(type?.replace(/_/g, ' ') ?? '') : TX_CATEGORY_LABELS[category];
 }
 
-export function transactionLabel(type: string): string {
-  const labels: Record<string, string> = {
-    DEPOSIT: 'Deposit',
-    WITHDRAWAL: 'Withdrawal',
-    TRANSFER_IN: 'Transfer In',
-    TRANSFER_OUT: 'Transfer Out',
-  };
-  return labels[type?.toUpperCase()] ?? type;
+/** Absolute value of a transaction amount (the backend stores debits as negatives). */
+export function absAmount(amount: number | string | null | undefined): number {
+  const num = typeof amount === 'string' ? parseFloat(amount) : (amount ?? 0);
+  return Number.isFinite(num) ? Math.abs(num) : 0;
+}
+
+/** Money in / money out for the current calendar month. */
+export function monthTotals(
+  transactions: { transactionType: string; amount: number; localDateTime: string | number[] }[],
+  now: Date = new Date()
+): { moneyIn: number; moneyOut: number; count: number } {
+  let moneyIn = 0;
+  let moneyOut = 0;
+  let count = 0;
+  for (const tx of transactions) {
+    const d = parseBackendDate(tx.localDateTime);
+    if (!d || d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) continue;
+    count++;
+    if (isCredit(tx.transactionType, tx.amount)) moneyIn += absAmount(tx.amount);
+    else moneyOut += absAmount(tx.amount);
+  }
+  return { moneyIn, moneyOut, count };
+}
+
+/** Sort key for a backend date (string or [y,m,d,h,m,s] array), keeping the time of day. */
+export function dateValue(value: string | number[] | undefined | null): number {
+  const d = parseBackendDate(value);
+  return d && !isNaN(d.getTime()) ? d.getTime() : 0;
 }
 
 // ---- String utilities ----

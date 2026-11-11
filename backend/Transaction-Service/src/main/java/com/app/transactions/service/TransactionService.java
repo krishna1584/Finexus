@@ -9,14 +9,14 @@ import com.app.transactions.model.response.TransactionRequest;
 public interface TransactionService {
 
     
-    Response addTransaction(TransactionDto transactionDto);
+    Response addTransaction(TransactionDto transactionDto, Long authUserId);
 
    
     Response internalTransaction(List<TransactionDto> transactionDtos, String transactionReference);
 
    
-    List<TransactionRequest> getTransaction(String accountId);
+    List<TransactionRequest> getTransaction(String accountId, Long authUserId);
 
    
-    List<TransactionRequest> getTransactionByTransactionReference(String transactionReference);
+    List<TransactionRequest> getTransactionByTransactionReference(String transactionReference, Long authUserId);
 }

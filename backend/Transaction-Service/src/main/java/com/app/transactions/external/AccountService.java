@@ -15,7 +15,8 @@ public interface AccountService {
     @GetMapping("/accounts")
     ResponseEntity<Account> readByAccountNumber(@RequestParam("accountNumber") String accountNumber);
 
-   
-    @PutMapping("/accounts")
-    ResponseEntity<Response> updateAccount(@RequestParam("accountNumber") String accountNumber, @RequestBody Account account);
+    /** Atomic balance change; internal endpoint (blocked at the gateway). */
+    @PostMapping("/accounts/internal/adjust")
+    ResponseEntity<Response> adjustBalance(@RequestParam("accountNumber") String accountNumber,
+            @RequestParam("amount") java.math.BigDecimal amount);
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowDownToLine,
@@ -16,15 +16,23 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { formatCurrency, maskAccountNumber, isCredit } from '@/utils';
+import { AccountSwitcher } from '@/components/ui/AccountSwitcher';
+import { absAmount, formatCurrency, maskAccountNumber, isCredit, transactionLabel } from '@/utils';
+import type { ApiError } from '@/types';
 
 type Mode = 'deposit' | 'withdraw';
 const QUICK_AMOUNTS = [500, 1000, 2500, 5000, 10000, 25000];
 
 export default function DepositPage() {
   const toast = useUIStore((s) => s.toast);
-  const { primaryAccount, isLoading: accountLoading, fetchAccounts } = useAccounts();
+  const notify = useUIStore((s) => s.addNotification);
+  const { primaryAccount, isLoading: accountLoading, loaded, refreshAccounts } = useAccounts();
   const { transactions, fetchTransactions } = useTransactions();
+
+  // Load this account's history (and reload when the user switches account).
+  useEffect(() => {
+    if (primaryAccount?.accountNumber) fetchTransactions(primaryAccount.accountNumber);
+  }, [primaryAccount?.accountNumber]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [mode, setMode] = useState<Mode>('deposit');
   const [amount, setAmount] = useState('');
@@ -35,6 +43,7 @@ export default function DepositPage() {
   const parsedAmount = parseFloat(amount);
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount > 0;
   const hasSufficientFunds = mode === 'deposit' || !primaryAccount || parsedAmount <= primaryAccount.availableBalance;
+  const isActive = primaryAccount?.accountStatus === 'ACTIVE';
 
   const handleSubmit = async () => {
     if (!primaryAccount?.accountNumber || !isAmountValid) return;
@@ -44,6 +53,7 @@ export default function DepositPage() {
     }
 
     setIsSubmitting(true);
+    const accountNumber = primaryAccount.accountNumber;
     try {
       await transactionService.addTransaction({
         accountId: primaryAccount.accountNumber,
@@ -52,18 +62,25 @@ export default function DepositPage() {
         description: description || (mode === 'deposit' ? 'Deposit' : 'Withdrawal'),
       });
       setSuccess({ amount: parsedAmount, mode });
-      await fetchAccounts();
-      await fetchTransactions(primaryAccount.accountNumber);
-    } catch {
-      toast('error', 'Transaction failed', 'Please try again.');
+      notify({
+        type: 'transaction',
+        title: mode === 'deposit' ? 'Deposit received' : 'Withdrawal made',
+        message: `${mode === 'deposit' ? '+' : '-'}${formatCurrency(parsedAmount)} on account ${maskAccountNumber(accountNumber)}`,
+      });
+      await refreshAccounts();
+      await fetchTransactions(accountNumber);
+    } catch (err) {
+      // Show the server's reason (e.g. "Insufficient balance", "Account is not active").
+      const apiErr = err as ApiError;
+      toast('error', 'Transaction failed', apiErr.message || 'Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const recent = transactions.slice(0, 5);
-  const totalCredits = transactions.filter((t) => isCredit(t.transactionType, t.amount)).reduce((s, t) => s + Math.abs(t.amount), 0);
-  const totalDebits = transactions.filter((t) => !isCredit(t.transactionType, t.amount)).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalCredits = transactions.filter((t) => isCredit(t.transactionType, t.amount)).reduce((s, t) => s + absAmount(t.amount), 0);
+  const totalDebits = transactions.filter((t) => !isCredit(t.transactionType, t.amount)).reduce((s, t) => s + absAmount(t.amount), 0);
 
   if (success) {
     return (
@@ -77,7 +94,7 @@ export default function DepositPage() {
             <p className="text-sm text-[var(--text-secondary)]">Your account has been updated.</p>
 
             <div className="mt-6 text-left rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-2)] p-4 space-y-3">
-              <Row label="Type" value={success.mode} />
+              <Row label="Type" value={success.mode === 'deposit' ? 'Deposit' : 'Withdrawal'} />
               <Row label="Amount" value={`${success.mode === 'deposit' ? '+' : '-'}${formatCurrency(success.amount)}`} strong />
               {primaryAccount && <Row label="New Balance" value={formatCurrency(primaryAccount.availableBalance)} />}
             </div>
@@ -98,14 +115,17 @@ export default function DepositPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div>
-        <h2 className="font-display text-3xl font-bold">Deposit & Withdraw</h2>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">Move funds instantly with clear balance visibility.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-3xl font-bold">Deposit & Withdraw</h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Move funds instantly with clear balance visibility.</p>
+        </div>
+        <AccountSwitcher />
       </div>
 
       <div className="grid lg:grid-cols-12 gap-5">
         <div className="lg:col-span-8 space-y-4">
-          {accountLoading ? (
+          {accountLoading && !loaded ? (
             <SkeletonCard />
           ) : primaryAccount ? (
             <Card padding="lg" className="bg-[var(--hero-bg)]">
@@ -121,7 +141,13 @@ export default function DepositPage() {
               </div>
             </Card>
           ) : (
-            <Card padding="lg"><p className="text-sm text-[var(--text-secondary)]">No account found.</p></Card>
+            <Card padding="lg"><p className="text-sm text-[var(--text-secondary)]">No account found. Open one from the dashboard.</p></Card>
+          )}
+
+          {primaryAccount && !isActive && (
+            <div className="rounded-xl border border-[var(--negative)]/25 bg-[var(--negative)]/10 p-3 text-sm text-[var(--negative)]">
+              This account is {(primaryAccount.accountStatus ?? '').toLowerCase()}. Choose an active account to deposit or withdraw.
+            </div>
           )}
 
           <Card padding="sm">
@@ -181,7 +207,7 @@ export default function DepositPage() {
                 id="deposit-submit-btn"
                 fullWidth
                 loading={isSubmitting}
-                disabled={!isAmountValid || !hasSufficientFunds || !primaryAccount}
+                disabled={!isAmountValid || !hasSufficientFunds || !primaryAccount || !isActive}
                 onClick={handleSubmit}
                 icon={mode === 'deposit' ? <ArrowDownToLine size={16} /> : <ArrowUpFromLine size={16} />}
                 variant={mode === 'withdraw' ? 'danger' : 'primary'}
@@ -208,16 +234,16 @@ export default function DepositPage() {
               <p className="text-sm text-[var(--text-secondary)] py-6 text-center">No transactions yet.</p>
             ) : (
               <div className="space-y-2">
-                {recent.map((tx) => {
+                {recent.map((tx, i) => {
                   const credit = isCredit(tx.transactionType, tx.amount);
                   const displayAmount = Math.abs(typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount ?? 0));
                   return (
-                    <div key={tx.referenceId} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] p-2.5 bg-[var(--bg-surface-2)]">
+                    <div key={`${tx.referenceId}-${i}`} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] p-2.5 bg-[var(--bg-surface-2)]">
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${credit ? 'bg-[var(--positive)]/15' : 'bg-[var(--negative)]/15'}`}>
                         {credit ? <ArrowDownToLine size={12} className="text-[var(--positive)]" /> : <ArrowUpFromLine size={12} className="text-[var(--negative)]" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{tx.comments ?? tx.transactionType}</p>
+                        <p className="text-xs font-medium truncate">{tx.comments || transactionLabel(tx.transactionType, tx.amount)}</p>
                       </div>
                       <p className={`text-xs font-semibold tabular-nums ${credit ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                         {credit ? '+' : '-'}{formatCurrency(displayAmount)}

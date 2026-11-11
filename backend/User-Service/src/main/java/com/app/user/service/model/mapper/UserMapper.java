@@ -34,7 +34,8 @@ public class UserMapper extends BaseMapper<User, UserDto>{
 
         UserDto userDto = new UserDto();
         if(!Objects.isNull(entity)){
-            BeanUtils.copyProperties(entity, userDto);
+            // Never send the password hash back to anyone.
+            BeanUtils.copyProperties(entity, userDto, "password");
             userDto.setUserId(entity.getId());
             if(!Objects.isNull(entity.getUserProfile())) {
                 UserProfileDto userProfileDto = new UserProfileDto();

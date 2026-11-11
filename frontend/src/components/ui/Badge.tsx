@@ -1,4 +1,5 @@
 import React from 'react';
+import { transactionLabel, txCategory } from '@/utils';
 
 type BadgeVariant = 'gold' | 'success' | 'danger' | 'neutral' | 'info';
 
@@ -54,11 +55,11 @@ export function Badge({ children, variant = 'neutral', size = 'md', dot = false,
 export function StatusBadge({ status }: { status: string }) {
   const normalized = status?.toUpperCase();
   const variant: BadgeVariant =
-    normalized === 'ACTIVE' || normalized === 'COMPLETED'
+    normalized === 'ACTIVE' || normalized === 'COMPLETED' || normalized === 'SUCCESS' || normalized === 'APPROVED'
       ? 'success'
-      : normalized === 'INACTIVE' || normalized === 'CLOSED' || normalized === 'FAILED'
+      : normalized === 'INACTIVE' || normalized === 'CLOSED' || normalized === 'FAILED' || normalized === 'BLOCKED' || normalized === 'REJECTED'
       ? 'danger'
-      : normalized === 'PENDING'
+      : normalized === 'PENDING' || normalized === 'PROCESSING'
       ? 'gold'
       : 'neutral';
 
@@ -71,21 +72,15 @@ export function StatusBadge({ status }: { status: string }) {
 
 // ---- Transaction type badge ----
 
-export function TxTypeBadge({ type }: { type: string }) {
-  const upper = type?.toUpperCase();
+/** Pass the amount too: transfers are one type on the backend and the sign says in vs out. */
+export function TxTypeBadge({ type, amount }: { type: string; amount?: number | string | null }) {
+  const category = txCategory(type, amount);
   const variant: BadgeVariant =
-    upper === 'DEPOSIT' || upper === 'TRANSFER_IN'
+    category === 'DEPOSIT' || category === 'TRANSFER_IN'
       ? 'success'
-      : upper === 'WITHDRAWAL' || upper === 'TRANSFER_OUT'
+      : category === 'WITHDRAWAL' || category === 'TRANSFER_OUT'
       ? 'danger'
       : 'neutral';
 
-  const labels: Record<string, string> = {
-    DEPOSIT: 'Deposit',
-    WITHDRAWAL: 'Withdrawal',
-    TRANSFER_IN: 'Transfer In',
-    TRANSFER_OUT: 'Transfer Out',
-  };
-
-  return <Badge variant={variant}>{labels[upper] ?? type}</Badge>;
+  return <Badge variant={variant}>{transactionLabel(type, amount)}</Badge>;
 }

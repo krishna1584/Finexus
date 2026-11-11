@@ -9,11 +9,10 @@ import com.app.fundtransfer.model.dto.response.FundTransferResponse;
 public interface FundTransferService {
 
     
-    FundTransferResponse fundTransfer(FundTransferRequest fundTransferRequest);
+    /** authUserId comes from the gateway (signed-in user); null on service-to-service calls. */
+    FundTransferResponse fundTransfer(FundTransferRequest fundTransferRequest, Long authUserId);
 
-    
-    FundTransferDto getTransferDetailsFromReferenceId(String referenceId);
+    FundTransferDto getTransferDetailsFromReferenceId(String referenceId, Long authUserId);
 
-   
-    List<FundTransferDto> getAllTransfersByAccountId(String accountId);
+    List<FundTransferDto> getAllTransfersByAccountId(String accountId, Long authUserId);
 }
