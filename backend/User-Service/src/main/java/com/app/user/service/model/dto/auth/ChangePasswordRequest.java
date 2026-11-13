@@ -1,6 +1,7 @@
 package com.app.user.service.model.dto.auth;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import lombok.AllArgsConstructor;
@@ -12,10 +13,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ChangePasswordRequest {
 
-    @NotBlank
+    @NotBlank(message = "Current password is required")
     private String currentPassword;
 
-    @NotBlank
-    @Size(min = 6, max = 40)
+    // Same rules as registration.
+    @NotBlank(message = "New password is required")
+    @Size(min = 8, max = 40, message = "Password must be 8 to 40 characters")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).*$", message = "Password needs at least one letter and one number")
     private String newPassword;
 }

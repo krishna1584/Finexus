@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class AuthController {
 
     @Autowired
@@ -89,22 +88,6 @@ public class AuthController {
                 .lastName(signUpRequest.getLastName())
                 .build();
 
-        long maxNum = 0;
-        for (User u : userRepository.findAll()) {
-            String ident = u.getIdentificationNumber();
-            if (ident != null && ident.startsWith("FIN")) {
-                try {
-                    long num = Long.parseLong(ident.substring(3));
-                    if (num > maxNum) {
-                        maxNum = num;
-                    }
-                } catch (NumberFormatException e) {
-                    // ignore
-                }
-            }
-        }
-        String nextIdent = "FIN" + (maxNum + 1);
-
         // Create new user's account
         User user = User.builder()
                 .emailId(signUpRequest.getEmailId())
@@ -112,10 +95,21 @@ public class AuthController {
                 .password(encoder.encode(signUpRequest.getPassword()))
                 .status(Status.ACTIVE)
                 .userProfile(userProfile)
-                .identificationNumber(nextIdent)
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        // Customer ID = "FIN" + the database id. The id is unique and assigned by the
+        // database, so two sign-ups at the same moment can't get the same customer ID
+        // (the old "read every user and add 1" approach could, and got slower as users grew).
+        // If an older, differently-numbered ID already uses that value, step past it.
+        long candidate = savedUser.getId();
+        String nextIdent = "FIN" + candidate;
+        while (userRepository.existsByIdentificationNumber(nextIdent)) {
+            nextIdent = "FIN" + (++candidate);
+        }
+        savedUser.setIdentificationNumber(nextIdent);
+        savedUser = userRepository.save(savedUser);
 
         // Auto-create a default SAVINGS account for this user
         try {

@@ -2,76 +2,56 @@ package com.app.user.service.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.app.user.service.model.dto.CreateUser;
 import com.app.user.service.model.dto.UserDto;
 import com.app.user.service.model.dto.UserUpdate;
 import com.app.user.service.model.dto.UserUpdateStatus;
 import com.app.user.service.model.dto.response.Response;
 import com.app.user.service.service.UserService;
 
-import java.util.List;
-
+/**
+ * User profile endpoints. Registration and sign-in are in AuthController.
+ *
+ * Reached through the API gateway, which only lets a signed-in user read/update
+ * their own /api/users/{id}. The PATCH and lookup endpoints are internal-only
+ * (blocked at the gateway) and used by other services.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<Response> createUser(@RequestBody CreateUser userDto) {
-        log.info("creating user with: {}", userDto.toString());
-        return ResponseEntity.ok(userService.createUser(userDto));
-    }
-
-   
-    @GetMapping
-    public ResponseEntity<List<UserDto>> readAllUsers() {
-        return ResponseEntity.ok(userService.readAllUsers());
-    }
-
-    
-    @GetMapping("auth/{authId}")
-    public ResponseEntity<UserDto> readUserByAuthId(@PathVariable String authId) {
-        log.info("reading user by authId");
-        return ResponseEntity.ok(userService.readUser(authId));
-    }
-
-    
+    /** Internal: change a user's status. */
     @PatchMapping("/{id}")
     public ResponseEntity<Response> updateUserStatus(@PathVariable Long id, @RequestBody UserUpdateStatus userUpdate) {
-        log.info("updating the user with: {}", userUpdate.toString());
-        return new ResponseEntity<>(userService.updateUserStatus(id, userUpdate), HttpStatus.OK);
+        log.info("updating status of user {} to {}", id, userUpdate.getStatus());
+        return ResponseEntity.ok(userService.updateUserStatus(id, userUpdate));
     }
 
-   
-    @PutMapping("{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<Response> updateUser(@PathVariable Long id, @RequestBody UserUpdate userUpdate) {
-        return new ResponseEntity<>(userService.updateUser(id, userUpdate), HttpStatus.OK);
+        return ResponseEntity.ok(userService.updateUser(id, userUpdate));
     }
 
-    
     @GetMapping("/{userId}")
     public ResponseEntity<UserDto> readUserById(@PathVariable Long userId) {
-        log.info("reading user by ID");
         return ResponseEntity.ok(userService.readUserById(userId));
     }
 
-   
+    /** Internal: find the owner of an account number. */
     @GetMapping("/accounts/{accountId}")
     public ResponseEntity<UserDto> readUserByAccountId(@PathVariable String accountId) {
         return ResponseEntity.ok(userService.readUserByAccountId(accountId));
     }
 
+    /** Internal: resolve a customer ID such as FIN2 (used by Fund-Transfer). */
     @GetMapping("/ident/{identificationNumber}")
     public ResponseEntity<UserDto> readUserByIdentificationNumber(@PathVariable String identificationNumber) {
         return ResponseEntity.ok(userService.readUserByIdentificationNumber(identificationNumber));
     }
 }
-

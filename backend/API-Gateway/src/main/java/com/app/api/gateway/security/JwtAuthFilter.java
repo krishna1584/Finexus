@@ -120,11 +120,8 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         if (p.equals("/accounts") && (method == HttpMethod.PUT || method == HttpMethod.PATCH)) return true;
         if (p.equals("/transactions/internal")) return true;
 
-        if (p.equals("/api/users")) return true;                  // list of every user
-        if (p.equals("/api/users/register")) return true;         // legacy Keycloak registration
         if (p.startsWith("/api/users/ident/")) return true;       // lookup by FIN id
         if (p.startsWith("/api/users/accounts/")) return true;    // lookup by account number
-        if (p.startsWith("/api/users/auth/")) return true;        // lookup by Keycloak id
         if (p.startsWith("/api/users/") && method == HttpMethod.PATCH) return true; // status change
         return false;
     }

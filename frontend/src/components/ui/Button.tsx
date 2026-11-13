@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
+import { Link, type LinkProps } from 'react-router-dom';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
 type Size = 'sm' | 'md' | 'lg';
@@ -54,15 +55,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={isDisabled}
-        className={[
-          'inline-flex items-center justify-center font-medium transition-all duration-150 ease-out select-none',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
-          'active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/40',
-          variantClasses[variant],
-          sizeClasses[size],
-          fullWidth ? 'w-full' : '',
-          className,
-        ].join(' ')}
+        aria-busy={loading || undefined}
+        className={buttonClasses({ variant, size, fullWidth, className })}
         {...props}
       >
         {loading ? (
@@ -78,3 +72,41 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = 'Button';
+
+/** The button look, for elements that aren't <button> (e.g. links). */
+function buttonClasses({
+  variant = 'primary',
+  size = 'md',
+  fullWidth = false,
+  className = '',
+}: { variant?: Variant; size?: Size; fullWidth?: boolean; className?: string } = {}) {
+  return [
+    'inline-flex items-center justify-center font-medium transition-all duration-150 ease-out select-none',
+    'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+    'active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/40',
+    variantClasses[variant],
+    sizeClasses[size],
+    fullWidth ? 'w-full' : '',
+    className,
+  ].join(' ');
+}
+
+interface ButtonLinkProps extends LinkProps {
+  variant?: Variant;
+  size?: Size;
+  icon?: React.ReactNode;
+  fullWidth?: boolean;
+}
+
+/**
+ * A link styled as a button. Use this instead of <Link><Button/></Link>,
+ * which nests two interactive elements (invalid HTML, two tab stops).
+ */
+export function ButtonLink({ variant, size, icon, fullWidth, className = '', children, ...props }: ButtonLinkProps) {
+  return (
+    <Link className={buttonClasses({ variant, size, fullWidth, className })} {...props}>
+      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {children}
+    </Link>
+  );
+}

@@ -30,7 +30,11 @@ const profileSchema = z.object({
 const passwordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Required'),
-    newPassword: z.string().min(6, 'Min 6 characters').max(40),
+    newPassword: z
+      .string()
+      .min(8, 'At least 8 characters')
+      .max(40, 'Max 40 characters')
+      .refine((v) => /[A-Za-z]/.test(v) && /\d/.test(v), 'Use at least one letter and one number'),
     confirmPassword: z.string().min(1, 'Required'),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
@@ -167,7 +171,7 @@ export default function ProfilePage() {
               <Input label="Last Name" id="profile-lastname" error={profileForm.formState.errors.lastName?.message} {...profileForm.register('lastName')} />
             </div>
 
-            <Input label="Contact Number" id="profile-contact" placeholder="+1 212 555 0194" {...profileForm.register('contactNo')} />
+            <Input label="Contact Number" id="profile-contact" placeholder="+91 98765 43210" {...profileForm.register('contactNo')} />
             <Input label="Address" id="profile-address" placeholder="City, Country" {...profileForm.register('address')} />
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -198,8 +202,8 @@ export default function ProfilePage() {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
-              <Input label="Occupation" id="profile-occupation" placeholder="Finance Manager" {...profileForm.register('occupation')} />
-              <Input label="Nationality" id="profile-nationality" placeholder="American" {...profileForm.register('nationality')} />
+              <Input label="Occupation" id="profile-occupation" placeholder="Software Engineer" {...profileForm.register('occupation')} />
+              <Input label="Nationality" id="profile-nationality" placeholder="Indian" {...profileForm.register('nationality')} />
             </div>
 
             <Button type="submit" loading={saving} icon={<Save size={15} />} id="profile-save-btn">Save Changes</Button>
@@ -221,7 +225,7 @@ export default function ProfilePage() {
 
       {activeTab === 'preferences' && (
         <Card padding="lg">
-          <CardHeader title="Preferences" subtitle="Customize your workspace" />
+          <CardHeader title="Preferences" subtitle="Appearance and notifications" />
 
           <div className="space-y-5">
             <ThemeToggle labeled />

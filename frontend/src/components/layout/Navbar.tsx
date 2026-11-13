@@ -47,8 +47,18 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
         setShowUserMenu(false);
       }
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowNotifications(false);
+        setShowUserMenu(false);
+      }
+    };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', onKey);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -70,7 +80,7 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
     .toUpperCase();
 
   return (
-    <header className="h-16 bg-[var(--bg-surface)]/85 backdrop-blur-xl border-b border-[var(--border-subtle)] flex items-center px-4 md:px-6 gap-4 z-30 flex-shrink-0">
+    <header className="h-16 bg-[var(--bg-surface)]/85 backdrop-blur-xl border-b border-[var(--border-subtle)] flex items-center px-3 sm:px-4 md:px-6 gap-2 sm:gap-4 z-30 flex-shrink-0">
       {/* Mobile menu button */}
       <button
         onClick={onMenuClick ?? toggleSidebar}
@@ -81,7 +91,7 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
       </button>
 
       {/* Page title */}
-      <h1 className="text-[var(--text-primary)] font-display font-semibold text-lg hidden sm:block">{title}</h1>
+      <h1 className="text-[var(--text-primary)] font-display font-semibold text-base sm:text-lg truncate min-w-0">{title}</h1>
 
       {/* Search */}
       <form
@@ -119,20 +129,22 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
         <div className="relative" ref={notifRef}>
           <button
             id="notification-bell"
+            aria-expanded={showNotifications}
+            aria-haspopup="true"
             onClick={() => setShowNotifications((v) => !v)}
             className="relative p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-2)] transition-colors border border-[var(--border-subtle)]"
             aria-label="Notifications"
           >
             <Bell size={17} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-[var(--negative)] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-[var(--negative)] text-white text-xs font-bold rounded-full flex items-center justify-center px-0.5">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in z-50">
+            <div className="fixed left-3 right-3 top-[4.25rem] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in z-50">
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
                 <h3 className="text-sm font-semibold text-[var(--text-primary)]">Notifications</h3>
                 {unreadCount > 0 && (
@@ -163,7 +175,7 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
                         <div className={n.read ? 'ml-4' : ''}>
                           <p className="text-xs font-semibold text-[var(--text-primary)]">{n.title}</p>
                           <p className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">{n.message}</p>
-                          <p className="text-[10px] text-[var(--text-secondary)]/60 mt-1">
+                          <p className="text-xs text-[var(--text-secondary)]/60 mt-1">
                             {formatTimeAgo(n.timestamp)}
                           </p>
                         </div>
@@ -180,6 +192,9 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
         <div className="relative" ref={userRef}>
           <button
             id="user-menu-button"
+            aria-expanded={showUserMenu}
+            aria-haspopup="menu"
+            aria-label="Account menu"
             onClick={() => setShowUserMenu((v) => !v)}
             className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-[var(--bg-surface-2)] transition-colors border border-transparent hover:border-[var(--border-subtle)]"
           >
@@ -193,10 +208,10 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
           </button>
 
           {showUserMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in z-50">
+            <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1.5rem)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in z-50">
               <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
                 <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{displayName}</p>
-                <p className="text-[10px] text-[var(--text-secondary)] truncate mt-0.5">{user?.emailId}</p>
+                <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">{user?.emailId}</p>
               </div>
               <div className="py-1">
                 <button

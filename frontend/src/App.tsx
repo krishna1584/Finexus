@@ -1,6 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useUIStore } from '@/store/useUIStore';
 
 // Layout
 import { AppShell } from '@/components/layout/AppShell';
@@ -19,27 +17,11 @@ import TransferPage from '@/pages/app/Transfer';
 import TransactionsPage from '@/pages/app/Transactions';
 import ProfilePage from '@/pages/app/Profile';
 
-function ThemeInitializer() {
-  const { theme, setTheme } = useUIStore();
-
-  useEffect(() => {
-    // Sync from localStorage on app mount
-    const stored = localStorage.getItem('finexus-theme') as 'light' | 'dark' | null;
-    if (stored && stored !== theme) {
-      setTheme(stored);
-    } else {
-      // Apply current theme to DOM
-      setTheme(theme);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return null;
-}
-
+// The theme class is applied by the inline script in index.html before React
+// loads, and by useUIStore.setTheme afterwards, so no initializer is needed.
 export default function App() {
   return (
     <BrowserRouter>
-      <ThemeInitializer />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />

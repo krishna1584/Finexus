@@ -19,11 +19,6 @@ export function formatCurrency(amount: number | string | undefined | null): stri
   return formatter.format(num);
 }
 
-export function formatCurrencyCompact(amount: number): string {
-  if (amount >= 1_000_000) return `₹ ${(amount / 1_000_000).toFixed(2)}M`;
-  if (amount >= 1_000) return `₹ ${(amount / 1_000).toFixed(1)}K`;
-  return formatCurrency(amount);
-}
 
 // ---- Date Formatting ----
 
@@ -45,7 +40,7 @@ export function parseBackendDate(value: string | number[] | undefined | null): D
 export function formatDate(value: string | number[] | undefined | null, opts?: Intl.DateTimeFormatOptions): string {
   const date = parseBackendDate(value);
   if (!date || isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-SG', {
+  return date.toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -56,7 +51,7 @@ export function formatDate(value: string | number[] | undefined | null, opts?: I
 export function formatDateTime(value: string | number[] | undefined | null): string {
   const date = parseBackendDate(value);
   if (!date || isNaN(date.getTime())) return '—';
-  return date.toLocaleString('en-SG', {
+  return date.toLocaleString('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -218,26 +213,6 @@ export function exportToCSV(data: Record<string, unknown>[], filename: string): 
   URL.revokeObjectURL(url);
 }
 
-// ---- Clipboard ----
 
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
-// ---- Debounce ----
 
-export function debounce<T extends (...args: Parameters<T>) => void>(
-  fn: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout>;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}

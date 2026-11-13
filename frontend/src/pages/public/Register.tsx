@@ -17,8 +17,19 @@ const registerSchema = z
   .object({
     name: z.string().min(1, 'Full name is required'),
     emailId: z.string().min(1, 'Email is required').email('Enter a valid email'),
-    contactNumber: z.string().optional(),
-    password: z.string().min(6, 'At least 6 characters').max(40, 'Max 40 characters'),
+    // Optional; if given: digits with optional +, spaces or dashes, 10-15 digits.
+    contactNumber: z
+      .string()
+      .optional()
+      .refine(
+        (v) => !v || (/^\+?[\d\s-]+$/.test(v) && v.replace(/\D/g, '').length >= 10 && v.replace(/\D/g, '').length <= 15),
+        'Enter a valid phone number, e.g. +91 98765 43210'
+      ),
+    password: z
+      .string()
+      .min(8, 'At least 8 characters')
+      .max(40, 'Max 40 characters')
+      .refine((v) => /[A-Za-z]/.test(v) && /\d/.test(v), 'Use at least one letter and one number'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -115,7 +126,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <h1 className="font-display text-3xl font-extrabold">Create your Finexus account</h1>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">Set up your workspace in under 2 minutes</p>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">It takes about two minutes</p>
               </div>
             </Link>
           </div>
@@ -132,6 +143,7 @@ export default function RegisterPage() {
                 label="Full Name"
                 type="text"
                 id="register-name"
+                autoComplete="name"
                 placeholder="Alex Morgan"
                 icon={<User size={16} />}
                 error={errors.name?.message}
@@ -142,7 +154,8 @@ export default function RegisterPage() {
                 label="Email"
                 type="email"
                 id="register-email"
-                placeholder="you@company.com"
+                autoComplete="email"
+                placeholder="you@example.com"
                 icon={<Mail size={16} />}
                 error={errors.emailId?.message}
                 {...register('emailId')}
@@ -152,7 +165,9 @@ export default function RegisterPage() {
                 label="Phone (optional)"
                 type="tel"
                 id="register-phone"
-                placeholder="+1 212 555 0146"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="+91 98765 43210"
                 icon={<Phone size={16} />}
                 error={errors.contactNumber?.message}
                 {...register('contactNumber')}
@@ -162,6 +177,8 @@ export default function RegisterPage() {
                 <Input
                   label="Password"
                   id="register-password"
+                  autoComplete="new-password"
+                  hint="At least 8 characters, with a letter and a number."
                   placeholder="Create a secure password"
                   icon={<Lock size={16} />}
                   showPasswordToggle
@@ -181,7 +198,7 @@ export default function RegisterPage() {
                         />
                       ))}
                     </div>
-                    <p className="text-[10px]" style={{ color: strength.color }}>
+                    <p className="text-xs" style={{ color: strength.color }}>
                       {strength.label}
                     </p>
                   </div>
@@ -191,6 +208,7 @@ export default function RegisterPage() {
               <Input
                 label="Confirm Password"
                 id="register-confirm-password"
+                autoComplete="new-password"
                 placeholder="Repeat your password"
                 icon={<Lock size={16} />}
                 showPasswordToggle

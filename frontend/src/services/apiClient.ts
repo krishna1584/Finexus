@@ -18,7 +18,13 @@ apiClient.interceptors.request.use(
     try {
       const authStorage = localStorage.getItem('finexus-auth');
       if (authStorage) {
-        const { token } = JSON.parse(authStorage);
+        const stored = JSON.parse(authStorage) as {
+          state?: { token?: string | null };
+          token?: string | null;
+        };
+        // Zustand persist stores application state under `state`. Keep the
+        // top-level fallback for sessions written by older app versions.
+        const token = stored.state?.token ?? stored.token;
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -43,6 +49,7 @@ apiClient.interceptors.response.use(
       message:
         (data?.responseMessage as string) ||
         (data?.message as string) ||
+        (data?.errorMessage as string) ||
         (data?.error as string) ||
         error.message ||
         'An unexpected error occurred',

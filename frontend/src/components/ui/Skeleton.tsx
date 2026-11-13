@@ -45,12 +45,3 @@ export function SkeletonTable({ rows = 5 }: { rows?: number }) {
   );
 }
 
-export function SkeletonText({ lines = 3 }: { lines?: number }) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton key={i} height="h-3" width={i === lines - 1 ? 'w-2/3' : 'w-full'} />
-      ))}
-    </div>
-  );
-}

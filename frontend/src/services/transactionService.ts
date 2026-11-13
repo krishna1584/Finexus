@@ -4,7 +4,6 @@
  * Routes (via gateway at /transactions/**):
  *  POST /transactions                         → BackendResponse
  *  GET  /transactions?accountId={id}          → TransactionRecord[]
- *  GET  /transactions/{referenceId}           → TransactionRecord[]
  */
 
 import apiClient from './apiClient';
@@ -34,19 +33,10 @@ async function getTransactionsByAccountId(accountId: string): Promise<Transactio
   return response.data;
 }
 
-async function getTransactionByReference(referenceId: string): Promise<TransactionRecord[]> {
-  if (USE_MOCK) {
-    await delay(400);
-    return MOCK_TRANSACTIONS.filter((t) => t.referenceId === referenceId);
-  }
-  const response = await apiClient.get<TransactionRecord[]>(`/transactions/${referenceId}`);
-  return response.data;
-}
 
 export const transactionService = {
   addTransaction,
   getTransactionsByAccountId,
-  getTransactionByReference,
 };
 
 function delay(ms: number) {

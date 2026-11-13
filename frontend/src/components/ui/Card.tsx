@@ -3,7 +3,6 @@ import React from 'react';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  glass?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
   onClick?: () => void;
@@ -16,17 +15,17 @@ const paddingClasses = {
   lg: 'p-6',
 };
 
-export function Card({ children, className = '', glass = false, padding = 'md', hover = false, onClick }: CardProps) {
+export function Card({ children, className = '', padding = 'md', hover = false, onClick }: CardProps) {
   return (
     <div
       onClick={onClick}
       className={[
         'rounded-3xl border transition-all duration-200',
-        glass
-          ? 'glass-card'
-          : 'bg-[var(--bg-surface)] border-[var(--border-subtle)]',
+        'bg-[var(--bg-surface)] border-[var(--border-subtle)]',
         'shadow-[var(--shadow-soft)]',
-        hover ? 'hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)] hover:border-[var(--border-strong)] cursor-pointer' : '',
+        hover ? 'hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)] hover:border-[var(--border-strong)]' : '',
+        // Only look clickable when it actually is.
+        onClick ? 'cursor-pointer' : '',
         paddingClasses[padding],
         className,
       ].join(' ')}

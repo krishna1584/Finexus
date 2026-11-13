@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# Finexus frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript + Vite, styled with Tailwind CSS 4, state in Zustand, forms with react-hook-form + zod. See the [main README](../README.md) for the whole system.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Command | What it does |
+| :--- | :--- |
+| `npm run dev` | Dev server on http://localhost:5173. API calls are forwarded to the gateway on :8088 |
+| `npm run build` | Type-check and build to `dist/` |
+| `npm test` | Unit tests (Vitest) |
+| `npm run lint` | Lint (oxlint) |
 
-## React Compiler
+## Settings (`.env`, copy from `.env.example`)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Variable | Purpose |
+| :--- | :--- |
+| `VITE_API_BASE_URL` | Gateway address for production builds. Leave empty in development |
+| `VITE_USE_MOCK_DATA` | `true` = demo mode with built-in sample data, no backend needed. Sign in with `demo@finexus.com` / `password123` |
 
-## Expanding the Oxlint configuration
+## Where things are
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+src/
+  pages/public/    Landing, Login, Register
+  pages/app/       Dashboard, Deposit, Transfer, Transactions, Profile
+  components/      layout (shell, sidebar, navbar) and ui (Button, Modal, Input, ...)
+  hooks/           useAuth, useAccounts, useTransactions, useDialog (pop-up keyboard behaviour)
+  services/        one file per backend service; mock/ holds demo-mode data and rules
+  store/           Zustand stores (auth, accounts, transactions, UI)
+  utils/           formatting and transaction helpers
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Conventions
+
+- Colours come from the CSS variables in `src/index.css`. Dark mode is the `.dark` class on `<html>`.
+- Money is shown in ₹ with `formatCurrency`; dates use `en-IN`.
+- The backend stores withdrawals and outgoing transfers as negative amounts. Use `isCredit`, `txCategory` and `absAmount` from `utils` rather than reading the sign yourself.
+- Use `ButtonLink` for links styled as buttons (never `<Link><Button/></Link>`), and `Modal`/`Drawer` for pop-ups (they handle focus and Escape).

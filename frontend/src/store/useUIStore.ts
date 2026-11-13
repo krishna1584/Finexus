@@ -27,10 +27,30 @@ interface UIState {
 
 const DEFAULT_PREFS: NotificationPrefs = { transaction: true, transfer: true, security: true };
 
+/**
+ * The theme has ONE saved setting: localStorage "finexus-theme". index.html reads
+ * the same key before React loads (no flash). With nothing saved, follow the OS.
+ */
+const THEME_KEY = 'finexus-theme';
+
+function initialTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function applyTheme(theme: Theme) {
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+}
+
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
+      theme: initialTheme(),
       sidebarCollapsed: false,
       toasts: [],
       // Filled by real events (deposits, transfers, sign-ins, ...); starts empty.
@@ -39,12 +59,12 @@ export const useUIStore = create<UIState>()(
 
       setTheme: (theme: Theme) => {
         set({ theme });
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
+        applyTheme(theme);
+        try {
+          localStorage.setItem(THEME_KEY, theme);
+        } catch {
+          // storage unavailable (private mode): theme still applies for this visit
         }
-        localStorage.setItem('finexus-theme', theme);
       },
 
       toggleTheme: () => {
@@ -102,12 +122,17 @@ export const useUIStore = create<UIState>()(
     {
       name: 'finexus-ui',
       partialize: (state) => ({
-        theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,
         notificationPrefs: state.notificationPrefs,
         // Survive reloads; cleared on sign-out so they never carry over to another user.
         notifications: state.notifications,
       }),
+      // Older versions also saved the theme here; ignore it so "finexus-theme" stays the only source.
+      merge: (persisted, current) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { theme: _ignored, ...rest } = (persisted ?? {}) as Partial<UIState>;
+        return { ...current, ...rest };
+      },
     }
   )
 );

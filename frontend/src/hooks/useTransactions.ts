@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useTransactionStore } from '@/store/useTransactionStore';
 import { useUIStore } from '@/store/useUIStore';
 import { transactionService } from '@/services/transactionService';
-import type { TransactionDto, ApiError } from '@/types';
+import type { ApiError } from '@/types';
 import { dateValue } from '@/utils';
 
 export function useTransactions() {
@@ -30,28 +30,10 @@ export function useTransactions() {
     [setTransactions, setLoading, setError, toast]
   );
 
-  const doTransaction = useCallback(
-    async (data: TransactionDto): Promise<boolean> => {
-      try {
-        await transactionService.addTransaction(data);
-        toast('success', 'Transaction successful', `${data.transactionType} of ${data.amount} completed.`);
-        // Refresh transactions for this account
-        await fetchTransactions(data.accountId);
-        return true;
-      } catch (err) {
-        const apiErr = err as ApiError;
-        toast('error', 'Transaction failed', apiErr.message);
-        return false;
-      }
-    },
-    [fetchTransactions, toast]
-  );
-
   return {
     transactions,
     isLoading,
     error,
     fetchTransactions,
-    doTransaction,
   };
 }

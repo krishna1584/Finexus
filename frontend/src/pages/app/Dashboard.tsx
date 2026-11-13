@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Card, CardHeader } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { StatusBadge, TxTypeBadge } from '@/components/ui/Badge';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { AccountSwitcher } from '@/components/ui/AccountSwitcher';
@@ -40,14 +40,15 @@ const OPENABLE_TYPES = ['SAVINGS', 'CURRENT'];
 
 function TinyStat({ title, value, icon: Icon, note }: { title: string; value: string; icon: typeof Wallet; note: string }) {
   return (
-    <Card padding="md" hover>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-secondary)] mb-2">{title}</p>
-          <p className="text-2xl font-display font-bold tabular-nums">{value}</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-2">{note}</p>
+    <Card padding="none" className="p-4 sm:p-5 min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.12em] text-[var(--text-secondary)] mb-2 truncate">{title}</p>
+          {/* Sized to fit two cards per row on phones/tablets and four on wide screens */}
+          <p className="text-lg sm:text-xl 2xl:text-2xl font-display font-bold tabular-nums break-words leading-tight">{value}</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-2 line-clamp-2">{note}</p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] flex items-center justify-center">
+        <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] items-center justify-center">
           <Icon size={18} className="text-[var(--accent-primary)] dark:text-[var(--accent-secondary)]" />
         </div>
       </div>
@@ -91,7 +92,7 @@ export default function DashboardPage() {
   const activeAccounts = accounts.filter((a) => a.accountStatus === 'ACTIVE');
   const totalBalance = activeAccounts.reduce((sum, a) => sum + (a.availableBalance ?? 0), 0);
   const month = useMemo(() => monthTotals(transactions), [transactions]);
-  const monthName = new Date().toLocaleString('en-IN', { month: 'long' });
+  const monthName = new Date().toLocaleString('en-IN', { month: 'short' });
   const typesAvailable = OPENABLE_TYPES.filter((t) => !accounts.some((a) => a.accountType === t));
   const closingAccount = accounts.find((a) => a.accountNumber === closing);
 
@@ -114,20 +115,21 @@ export default function DashboardPage() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={fade} transition={{ duration: 0.35 }} className="space-y-6">
-      <section className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--hero-bg)] p-6 md:p-8 shadow-[var(--shadow-soft)]">
-        <div className="flex flex-wrap items-start justify-between gap-6">
+      <section className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--hero-bg)] p-4 sm:p-6 md:p-8 shadow-[var(--shadow-soft)]">
+        <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-6">
           <div>
             <p className="text-sm text-[var(--text-secondary)]">Good {getTimeOfDay()},</p>
             <h2 className="font-display text-3xl md:text-4xl font-extrabold mt-1">{displayName}</h2>
-            <p className="text-sm text-[var(--text-secondary)] mt-3 max-w-xl">Your balances, payments and recent activity in one place.</p>
+            <p className="hidden sm:block text-sm text-[var(--text-secondary)] mt-3 max-w-xl">Your balances, payments and recent activity in one place.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AccountSwitcher />
-            <Link to="/transfer"><Button size="sm" icon={<Send size={14} />}>Quick Transfer</Button></Link>
+            <ButtonLink to="/transfer" size="sm" icon={<Send size={14} />}>Quick Transfer</ButtonLink>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-4 mt-8">
+        {/* 2 columns on phones and tablets (the sidebar takes width at md), 4 on wide screens */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mt-5 sm:mt-8">
           {accountLoading && !loaded ? (
             <>
               <SkeletonCard />
@@ -166,8 +168,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid lg:grid-cols-3 gap-5">
-        <Card padding="md" className="lg:col-span-2">
+      <section className="grid lg:grid-cols-3 gap-5 min-w-0">
+        <Card padding="md" className="lg:col-span-2 min-w-0">
           <CardHeader
             title="Recent Transactions"
             subtitle={primaryAccount ? `Account ${maskAccountNumber(primaryAccount.accountNumber)}` : undefined}
@@ -286,15 +288,6 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="fixed right-5 bottom-5 z-20">
-        <Link
-          to="/transfer"
-          aria-label="Quick transfer"
-          className="w-12 h-12 rounded-2xl bg-[var(--accent-primary)] text-white dark:bg-[var(--accent-secondary)] dark:text-[#0B0F14] shadow-[var(--shadow-card)] hover:scale-105 transition-transform flex items-center justify-center"
-        >
-          <Send size={18} />
-        </Link>
-      </div>
     </motion.div>
   );
 }

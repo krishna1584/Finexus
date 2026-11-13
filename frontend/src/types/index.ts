@@ -192,4 +192,3 @@ export interface NotificationPrefs {
   security: boolean;
 }
 
-export type AuthMode = 'LOCAL_JWT' | 'OAUTH2';

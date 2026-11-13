@@ -1,13 +1,10 @@
 /**
  * authService.ts
  *
- * Routes:
- *  POST /api/auth/login  → JwtResponse
- *  POST /api/auth/register → BackendResponse
- *  POST /api/users/register → BackendResponse  (gateway permitAll)
- *
- * Auth Mode selected via VITE_AUTH_MODE env var.
- * LOCAL_JWT (default): calls /api/auth/login on User-Service through gateway.
+ * Routes (User-Service, through the API gateway):
+ *  POST /api/auth/login            → JwtResponse (public)
+ *  POST /api/auth/register         → BackendResponse (public)
+ *  POST /api/auth/change-password  → BackendResponse (signed in)
  */
 
 import apiClient from './apiClient';

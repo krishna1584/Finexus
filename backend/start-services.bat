@@ -1,74 +1,67 @@
 @echo off
 echo ========================================
-echo Banking Application Startup Script
+echo Finexus backend startup
 echo ========================================
 
 echo.
 if exist .env (
     echo Loading variables from .env...
-    for /f "usebackq tokens=1,2 delims==" %%i in (".env") do (
-        set "var=%%i"
-        set "val=%%j"
-        if not "%%i"=="" (
-            if not "%%j"=="" (
-                set "%%i=%%j"
-            )
-        )
+    rem eol=# skips comment lines. tokens=1,* keeps everything after the first "="
+    rem so values that contain "=" (e.g. a base64 JWT_SECRET) are not cut short.
+    for /f "usebackq eol=# tokens=1,* delims==" %%i in (".env") do (
+        if not "%%i"=="" if not "%%j"=="" set "%%i=%%j"
     )
 ) else (
-    echo No .env file found. Using default application configuration.
+    echo No .env file found. Copy .env.example to .env and fill it in first.
+    pause
+    exit /b 1
 )
 
 echo.
-echo Starting Service Registry (Eureka Server)...
+echo Starting Service Registry (Eureka)...
 start /B cmd /c "cd Service-Registry && mvn spring-boot:run"
 
-echo Waiting 30 seconds for Service Registry to start...
+echo Waiting 30 seconds for the Service Registry to start...
 timeout /t 30 /nobreak
 
 echo.
 echo Starting API Gateway...
 start /B cmd /c "cd API-Gateway && mvn spring-boot:run"
 
-echo Waiting 20 seconds for API Gateway to register...
+echo Waiting 20 seconds for the API Gateway to register...
 timeout /t 20 /nobreak
 
 echo.
+echo Starting Sequence Generator...
+start /B cmd /c "cd Sequence-Generator && mvn spring-boot:run"
+
 echo Starting User Service...
 start /B cmd /c "cd User-Service && mvn spring-boot:run"
 
-echo.
 echo Starting Account Service...
 start /B cmd /c "cd Account-Service && mvn spring-boot:run"
 
-echo.
 echo Starting Transaction Service...
 start /B cmd /c "cd Transaction-Service && mvn spring-boot:run"
 
-echo.
 echo Starting Fund Transfer Service...
 start /B cmd /c "cd Fund-Transfer && mvn spring-boot:run"
 
 echo.
-echo Starting Sequence Generator Service...
-start /B cmd /c "cd Sequence-Generator && mvn spring-boot:run"
-
-echo.
 echo ========================================
-echo All services are starting up!
+echo All services are starting.
 echo ========================================
 echo.
-echo Please wait for all services to register with Eureka
-echo Check the Eureka dashboard at: http://localhost:8761
+echo Wait until every service shows up on the Eureka dashboard:
+echo   http://localhost:8761
 echo.
-echo To start the frontend:
-echo   cd banking-frontend
+echo Then start the frontend in another terminal:
+echo   cd frontend
 echo   npm install
-echo   npm start
+echo   npm run dev
 echo.
-echo Frontend will be available at: http://localhost:3000
+echo The app will be at http://localhost:5173
 echo.
-echo NOTE: Since services are running in the background of this terminal,
-echo you can stop them by closing this terminal window or pressing Ctrl+C.
+echo To stop everything, run stop-services.bat (or close this window).
 echo.
 pause

@@ -15,7 +15,6 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/fund-transfers")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class FundTransferController {
 
     /** Set by the API gateway from the signed-in user's token. */

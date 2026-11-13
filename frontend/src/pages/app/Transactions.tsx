@@ -161,59 +161,75 @@ export default function TransactionsPage() {
 
       <Card padding="md">
         <CardHeader title="Filters" />
-        <div className="grid md:grid-cols-12 gap-3">
-          <div className="relative md:col-span-4">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+        {/* 2 columns on phones and tablets, one row of 12 on wide screens */}
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-3">
+          <div className="col-span-2 lg:col-span-4">
+            <label htmlFor="tx-search" className="block text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">Search</label>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
+              <input
+                id="tx-search"
+                type="search"
+                placeholder="Reference, note or amount"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] text-base sm:text-sm focus:outline-none focus:border-[var(--accent-primary)] pl-9 pr-3"
+              />
+            </div>
+          </div>
+
+          <div className="col-span-1 lg:col-span-2">
+            <label htmlFor="tx-type" className="block text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">Type</label>
+            <div className="relative">
+              <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
+              <select
+                id="tx-type"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] text-base sm:text-sm focus:outline-none focus:border-[var(--accent-primary)] appearance-none pl-8 pr-8"
+              >
+                {TX_TYPES.map((t) => <option key={t} value={t}>{t === 'All' ? 'All types' : TX_CATEGORY_LABELS[t]}</option>)}
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="col-span-1 lg:col-span-2">
+            <label htmlFor="tx-status" className="block text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">Status</label>
+            <div className="relative">
+              <select
+                id="tx-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] text-base sm:text-sm focus:outline-none focus:border-[var(--accent-primary)] appearance-none px-3 pr-8"
+              >
+                {TX_STATUSES.map((s) => <option key={s} value={s}>{s === 'All' ? 'All statuses' : capitalize(s)}</option>)}
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="col-span-1 lg:col-span-2">
+            <label htmlFor="tx-from" className="block text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">From</label>
             <input
-              id="tx-search"
-              type="search"
-              placeholder="Search by reference or note"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] pl-9 pr-3 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
-            />
-          </div>
-
-          <div className="relative md:col-span-2">
-            <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-11 w-full appearance-none rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] pl-8 pr-8 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
-            >
-              {TX_TYPES.map((t) => <option key={t} value={t}>{t === 'All' ? 'All types' : TX_CATEGORY_LABELS[t]}</option>)}
-            </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
-          </div>
-
-          <div className="relative md:col-span-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-11 w-full appearance-none rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] px-3 pr-8 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
-            >
-              {TX_STATUSES.map((s) => <option key={s} value={s}>{s === 'All' ? 'All statuses' : capitalize(s)}</option>)}
-            </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none" />
-          </div>
-
-          <div className="md:col-span-2">
-            <input
+              id="tx-from"
               type="date"
               value={dateFrom}
+              max={dateTo || undefined}
               onChange={(e) => setDateFrom(e.target.value)}
-              aria-label="From date"
-              className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] px-3 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
+              className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] text-base sm:text-sm focus:outline-none focus:border-[var(--accent-primary)] px-2 sm:px-3"
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div className="col-span-1 lg:col-span-2">
+            <label htmlFor="tx-to" className="block text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">To</label>
             <input
+              id="tx-to"
               type="date"
               value={dateTo}
+              min={dateFrom || undefined}
               onChange={(e) => setDateTo(e.target.value)}
-              aria-label="To date"
-              className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] px-3 text-sm focus:outline-none focus:border-[var(--accent-primary)]"
+              className="h-11 w-full rounded-xl bg-[var(--bg-surface-2)] border border-[var(--border-subtle)] text-base sm:text-sm focus:outline-none focus:border-[var(--accent-primary)] px-2 sm:px-3"
             />
           </div>
         </div>
@@ -223,74 +239,120 @@ export default function TransactionsPage() {
         {isLoading ? (
           <div className="p-4"><SkeletonTable rows={8} /></div>
         ) : pageData.length === 0 ? (
-          <div className="py-16 text-center text-[var(--text-secondary)]">No transactions match your criteria.</div>
+          <div className="py-16 px-4 text-center text-[var(--text-secondary)]">No transactions match your criteria.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px]">
-              <thead>
-                <tr className="border-b border-[var(--border-subtle)]">
-                  <th className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Reference</th>
-                  <th className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Category</th>
-                  <th className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Type</th>
-                  <th className="text-right px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)] cursor-pointer" onClick={() => toggleSort('amount')}>
-                    Amount {sortBy === 'amount' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Description</th>
-                  <th className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)] cursor-pointer" onClick={() => toggleSort('date')}>
-                    Date {sortBy === 'date' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Status</th>
-                </tr>
-              </thead>
-              <tbody>
+          <>
+            {/* Phones and tablets: one tappable card per transaction */}
+            <ul className="lg:hidden divide-y divide-[var(--border-subtle)]">
               {pageData.map((tx, i) => {
-                  const credit = isCredit(tx.transactionType, tx.amount);
-                  const displayAmount = absAmount(tx.amount);
-                  return (
-                    <tr
-                      key={`${tx.referenceId}-${tx.accountId}-${i}`}
+                const credit = isCredit(tx.transactionType, tx.amount);
+                return (
+                  <li key={`${tx.referenceId}-${tx.accountId}-${i}`}>
+                    <button
+                      type="button"
                       onClick={() => setSelectedTx(tx)}
-                      className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--bg-surface-2)] focus-visible:outline-none focus-visible:bg-[var(--bg-surface-2)]"
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">{tx.referenceId}</td>
-                      <td className="px-4 py-3">
-                        <div className="inline-flex items-center gap-2 rounded-lg bg-[var(--bg-surface-2)] px-2.5 py-1 border border-[var(--border-subtle)]">
-                          <span className={`w-1.5 h-1.5 rounded-full ${credit ? 'bg-[var(--positive)]' : 'bg-[var(--negative)]'}`} />
-                          <span className="text-xs text-[var(--text-secondary)]">{credit ? 'Income' : 'Expense'}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {credit
-                            ? <ArrowDownLeft size={14} className="text-[var(--positive)]" />
-                            : <ArrowUpRight size={14} className="text-[var(--negative)]" />}
-                          <TxTypeBadge type={tx.transactionType} amount={tx.amount} />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`font-semibold tabular-nums ${credit ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
-                          {credit ? '+' : '-'}{formatCurrency(displayAmount)}
+                      <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${credit ? 'bg-[var(--positive)]/15' : 'bg-[var(--negative)]/15'}`}>
+                        {credit
+                          ? <ArrowDownLeft size={15} className="text-[var(--positive)]" />
+                          : <ArrowUpRight size={15} className="text-[var(--negative)]" />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium truncate">{tx.comments || transactionLabel(tx.transactionType, tx.amount)}</span>
+                        <span className="block text-xs text-[var(--text-secondary)] mt-0.5">
+                          {transactionLabel(tx.transactionType, tx.amount)} · {formatDate(tx.localDateTime)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{truncate(tx.comments ?? '—', 42)}</td>
-                      <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{formatDate(tx.localDateTime)}</td>
-                      <td className="px-4 py-3"><StatusBadge status={tx.transactionStatus} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                      <span className="text-right shrink-0">
+                        <span className={`block text-sm font-semibold tabular-nums ${credit ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
+                          {credit ? '+' : '-'}{formatCurrency(absAmount(tx.amount))}
+                        </span>
+                        {tx.transactionStatus !== 'COMPLETED' && (
+                          <span className="block mt-1"><StatusBadge status={tx.transactionStatus} /></span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Wide screens: full table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full">
+                <caption className="sr-only">Transactions. Select a row to see details.</caption>
+                <thead>
+                  <tr className="border-b border-[var(--border-subtle)]">
+                    <th scope="col" className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Reference</th>
+                    <th scope="col" className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Type</th>
+                    <th scope="col" aria-sort={sortBy === 'amount' ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'} className="text-right px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+                      <button type="button" onClick={() => toggleSort('amount')} className="uppercase tracking-wide hover:text-[var(--text-primary)]">
+                        Amount {sortBy === 'amount' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+                      </button>
+                    </th>
+                    <th scope="col" className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Description</th>
+                    <th scope="col" aria-sort={sortBy === 'date' ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'} className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+                      <button type="button" onClick={() => toggleSort('date')} className="uppercase tracking-wide hover:text-[var(--text-primary)]">
+                        Date {sortBy === 'date' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
+                      </button>
+                    </th>
+                    <th scope="col" className="text-left px-4 py-3 text-xs uppercase tracking-wide text-[var(--text-secondary)]">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageData.map((tx, i) => {
+                    const credit = isCredit(tx.transactionType, tx.amount);
+                    return (
+                      <tr
+                        key={`${tx.referenceId}-${tx.accountId}-${i}`}
+                        onClick={() => setSelectedTx(tx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedTx(tx);
+                          }
+                        }}
+                        tabIndex={0}
+                        aria-label={`${transactionLabel(tx.transactionType, tx.amount)} of ${formatCurrency(absAmount(tx.amount))} on ${formatDate(tx.localDateTime)}. Open details`}
+                        className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-surface-2)] focus-visible:outline-none focus-visible:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
+                      >
+                        <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)] max-w-[160px] truncate">{tx.referenceId}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {credit
+                              ? <ArrowDownLeft size={14} className="text-[var(--positive)]" />
+                              : <ArrowUpRight size={14} className="text-[var(--negative)]" />}
+                            <TxTypeBadge type={tx.transactionType} amount={tx.amount} />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className={`font-semibold tabular-nums ${credit ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
+                            {credit ? '+' : '-'}{formatCurrency(absAmount(tx.amount))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{truncate(tx.comments ?? '—', 42)}</td>
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)] whitespace-nowrap">{formatDate(tx.localDateTime)}</td>
+                        <td className="px-4 py-3"><StatusBadge status={tx.transactionStatus} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-[var(--text-secondary)]">Page {page} of {pageCount}</p>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-          <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={page === pageCount}>Next</Button>
-        </div>
-      </div>
+      {pageCount > 1 && (
+        <nav className="flex items-center justify-between gap-3" aria-label="Pagination">
+          <p className="text-sm text-[var(--text-secondary)]">Page {page} of {pageCount}</p>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+            <Button variant="secondary" size="sm" onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={page === pageCount}>Next</Button>
+          </div>
+        </nav>
+      )}
 
       <Drawer isOpen={!!selectedTx} onClose={() => setSelectedTx(null)} title="Transaction Detail" width="sm" id="transaction-detail-drawer">
         {selectedTx && (

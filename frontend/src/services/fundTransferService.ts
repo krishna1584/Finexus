@@ -4,7 +4,6 @@
  * Routes (via gateway at /fund-transfers/**):
  *  POST /fund-transfers                        → FundTransferResponse
  *  GET  /fund-transfers/{referenceId}          → FundTransferDto
- *  GET  /fund-transfers?accountId={id}         → FundTransferDto[]
  */
 
 import apiClient from './apiClient';
@@ -34,23 +33,10 @@ async function getTransferByReference(referenceId: string): Promise<FundTransfer
   return response.data;
 }
 
-async function getTransfersByAccountId(accountId: string): Promise<FundTransferDto[]> {
-  if (USE_MOCK) {
-    await delay(500);
-    return MOCK_TRANSFERS.filter(
-      (t) => t.fromAccount === accountId || t.toAccount === accountId
-    );
-  }
-  const response = await apiClient.get<FundTransferDto[]>('/fund-transfers', {
-    params: { accountId },
-  });
-  return response.data;
-}
 
 export const fundTransferService = {
   fundTransfer,
   getTransferByReference,
-  getTransfersByAccountId,
 };
 
 function delay(ms: number) {

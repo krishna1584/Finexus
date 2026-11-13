@@ -4,7 +4,6 @@
  * Routes (via gateway at /api/users/**):
  *  GET  /api/users/{userId}      → UserDto
  *  PUT  /api/users/{id}          → BackendResponse (body: UserUpdate)
- *  GET  /api/users/auth/{authId} → UserDto
  */
 
 import apiClient from './apiClient';
@@ -22,14 +21,6 @@ async function getUserById(userId: number): Promise<UserDto> {
   return response.data;
 }
 
-async function getUserByAuthId(authId: string): Promise<UserDto> {
-  if (USE_MOCK) {
-    await delay(500);
-    return { ...MOCK_USER, authId };
-  }
-  const response = await apiClient.get<UserDto>(`/api/users/auth/${authId}`);
-  return response.data;
-}
 
 async function updateUser(userId: number, data: UserUpdateRequest): Promise<BackendResponse> {
   if (USE_MOCK) {
@@ -45,7 +36,6 @@ async function updateUser(userId: number, data: UserUpdateRequest): Promise<Back
 
 export const userService = {
   getUserById,
-  getUserByAuthId,
   updateUser,
 };
 

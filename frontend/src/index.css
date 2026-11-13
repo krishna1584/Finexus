@@ -1,7 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
 
 @import "tailwindcss";
-@config "../tailwind.config.js";
+
+/* Dark mode follows the .dark class on <html> (set by index.html / the theme toggle),
+   not the OS setting directly. Replaces the old tailwind.config.js. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
 
 :root {
   color-scheme: light;
@@ -72,18 +79,6 @@ body {
   font-feature-settings: "tnum";
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.74);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-}
-
-.dark .glass-card {
-  background: rgba(23, 28, 36, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -100,7 +95,6 @@ body {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -127,30 +121,7 @@ body {
   background-clip: text;
 }
 
-.text-gradient-accent {
-  background: linear-gradient(130deg, var(--accent-secondary) 0%, #e4ff9a 40%, var(--accent-primary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  background-size: 200% 200%;
-  animation: gradient-shift 6s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.shadow-premium {
-  box-shadow: var(--shadow-card);
-}
-
-.transition-base {
-  transition: all 0.2s ease;
-}
-
-/* Gold accent left border for active nav items */
+/* Accent bar on the active sidebar item */
 .nav-active-bar::before {
   content: '';
   position: absolute;
@@ -163,66 +134,14 @@ body {
   border-radius: 0 2px 2px 0;
 }
 
-/* Floating animation for hero card */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(-2deg); }
-  50% { transform: translateY(-16px) rotate(-2deg); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* Particle float animations */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 .animate-fade-in {
   animation: fade-in 0.35s ease forwards;
 }
-
-.animate-fade-up {
-  animation: fade-in-up 0.4s ease forwards;
-}
-
-@keyframes float-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-  33% { transform: translate(20px, -30px) scale(1.1); opacity: 0.9; }
-  66% { transform: translate(-15px, 20px) scale(0.9); opacity: 0.5; }
-}
-@keyframes float-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  50% { transform: translate(-25px, -20px) scale(1.2); opacity: 0.8; }
-}
-@keyframes float-3 {
-  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
-  40% { transform: translate(30px, 15px); opacity: 0.9; }
-  80% { transform: translate(-10px, -25px); opacity: 0.3; }
-}
-.animate-float-1 { animation: float-1 8s ease-in-out infinite; }
-.animate-float-2 { animation: float-2 11s ease-in-out infinite; }
-.animate-float-3 { animation: float-3 9s ease-in-out infinite; }
-
-/* Slow spin for decorative orbs */
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow { animation: spin-slow 20s linear infinite; }
-
-/* Glow pulse */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px var(--accent-primary-soft), 0 0 60px var(--accent-secondary-soft); }
-  50% { box-shadow: 0 0 40px var(--accent-primary-soft), 0 0 100px var(--accent-secondary-soft); }
-}
-.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
 
 /* Slide-in for toasts */
 @keyframes slideInRight {
@@ -230,28 +149,14 @@ body {
   to { transform: translateX(0); opacity: 1; }
 }
 
-@keyframes slideOutRight {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(110%); opacity: 0; }
-}
-
 .toast-enter {
   animation: slideInRight 0.25s ease-out forwards;
-}
-
-.toast-exit {
-  animation: slideOutRight 0.2s ease-in forwards;
 }
 
 /* Drawer slide */
 @keyframes drawerIn {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
-}
-
-@keyframes drawerOut {
-  from { transform: translateX(0); }
-  to { transform: translateX(100%); }
 }
 
 /* Modal fade/scale */
@@ -262,21 +167,6 @@ body {
 
 .modal-enter {
   animation: modalIn 0.2s ease-out forwards;
-}
-
-/* Input focus ring override */
-.input-field:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-primary-soft);
-}
-
-/* Recharts overrides */
-.recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border-subtle) !important;
-  border-radius: 8px !important;
-  box-shadow: var(--shadow-card) !important;
 }
 
 /* Print styles for transfer receipts.
@@ -316,4 +206,19 @@ body {
   background-image: linear-gradient(to right, rgba(120, 132, 163, 0.1) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(120, 132, 163, 0.1) 1px, transparent 1px);
   background-size: 36px 36px;
+}
+
+/* Anchor links (#features etc.) land below the sticky 64px header. */
+section[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* Respect "reduce motion": stop decorative animations and smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

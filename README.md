@@ -1,230 +1,158 @@
-# 🏛️ Finexus: Modern Microservices Banking Platform
+# Finexus
 
-[![Java](https://img.shields.io/badge/Java-17-orange.svg?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.java.com/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.14-brightgreen.svg?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-19.2.7-blue.svg?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6.0.2-blue.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4.0-38B2AC.svg?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+A personal banking app: a React frontend talking to Spring Boot microservices through an API gateway.
 
-**Finexus** is an enterprise-grade digital banking application engineered with a decoupled, high-resilience **microservices architecture** on the backend and a modern, high-performance **React client** on the frontend. It models real-world transactional integrity, service independence, and secure authorization across distributed systems.
+Users can register, hold savings and current accounts, deposit and withdraw, send money to other customers by account number or customer ID (e.g. `FIN2`), and search or export their transaction history.
+
+[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-blue.svg)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-38B2AC.svg)](https://tailwindcss.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8-blue.svg)](https://www.mysql.com/)
 
 ---
 
-## 🏗️ System Architecture & Data Flow
-
-Finexus is designed around the **Database-per-Service** pattern to ensure strict boundary isolation between business contexts. External clients interact solely through an API Gateway, which handles request routing and load balancing via service discovery.
+## Architecture
 
 ```mermaid
 graph TD
-    Client["📱 React Frontend (Port 5173 / Vite)"] -->|REST Queries| Gateway["🌐 Spring Cloud Gateway (Port 8088)"]
-    
-    subgraph Registry ["Orchestration & Registry Hub"]
-        Eureka["🛡️ Eureka Discovery Server (Port 8761)"]
-        Gateway
-    end
-    
-    Gateway -->|Load Balances| User["👤 User Service (Port 8082)"]
-    Gateway -->|Load Balances| Account["💼 Account Service (Port 8081)"]
-    Gateway -->|Load Balances| Transaction["💳 Transaction Service (Port 8084)"]
-    Gateway -->|Load Balances| Transfer["💸 Fund Transfer Service (Port 8085)"]
-    
-    %% Inter-service calls
-    User -.->|Feign Client| Account
-    Transfer -.->|Feign Client| Account
-    Transaction -.->|Feign Client| Account
-    Account -.->|Feign Client| SeqGen["🔢 Sequence Gen Service (Port 8083)"]
-    Transaction -.->|Feign Client| SeqGen
-    
-    subgraph Storage ["Distributed SQL Database Instances"]
-        UDB[("user_db")]
-        ADB[("account_db")]
-        TDB[("transaction_db")]
-        FDB[("fund_transfer_db")]
-    end
-    
-    User ---> UDB
-    Account ---> ADB
-    Transaction ---> TDB
-    Transfer ---> FDB
+    Client["React frontend (Vite, :5173)"] -->|HTTPS / JSON| Gateway["API Gateway (:8088)<br/>JWT check · CORS · routing"]
+    Gateway --> User["User Service (:8082)"]
+    Gateway --> Account["Account Service (:8081)"]
+    Gateway --> Transaction["Transaction Service (:8084)"]
+    Gateway --> Transfer["Fund Transfer (:8085)"]
+
+    User -.->|Feign| Account
+    Account -.->|Feign| User
+    Account -.->|Feign| Seq["Sequence Generator (:8083)"]
+    Account -.->|Feign| Transaction
+    Transaction -.->|Feign| Account
+    Transfer -.->|Feign| Account
+    Transfer -.->|Feign| Transaction
+    Transfer -.->|Feign| User
+
+    Eureka["Eureka registry (:8761)"]
+    DB[("MySQL")]
+    User --- DB
+    Account --- DB
+    Transaction --- DB
+    Transfer --- DB
+    Seq --- DB
 ```
 
----
+| Service | Port | Responsibility |
+| :--- | :---: | :--- |
+| **Service-Registry** | 8761 | Eureka service discovery |
+| **API-Gateway** | 8088 | Single entry point. Validates the login token, blocks internal-only endpoints, handles CORS, routes requests |
+| **User-Service** | 8082 | Registration, sign-in (issues JWTs), password change, profiles |
+| **Account-Service** | 8081 | Accounts and balances. All balance changes are single atomic SQL updates |
+| **Transaction-Service** | 8084 | Deposits, withdrawals and transaction history |
+| **Fund-Transfer** | 8085 | Transfers between accounts |
+| **Sequence-Generator** | 8083 | Account numbers (`ACC0000001`, …) |
+| **Frontend** | 5173 | React 19 + TypeScript + Tailwind 4 + Zustand |
 
-## ⚡ High-Impact Technical Highlights
+### Data
 
-### 🛠️ Backend Microservices Ecosystem
-- **Decoupled Architecture**: Spring Boot microservices representing isolated business operations: User Profiles, Accounts, Transactions, and Fund Transfers.
-- **Service Registry & Discovery**: Netflix Eureka dynamically monitors service health, scales instances, and maps route endpoints.
-- **Dynamic Routing**: Spring Cloud Gateway acts as the single entry point, managing CORS, global logging, and security handshakes.
-- **Inter-Service Communication**: OpenFeign clients execute type-safe, synchronous inter-service REST calls.
-- **Sequence Generation**: Dedicated helper service generates collision-free, formatted account, transaction, and reference IDs.
-
-### 📱 Modern React Client
-- **State of the Art Tech Stack**: Built with React 19, TypeScript 6.0, and Vite for lightning-fast hot module replacement.
-- **Tailwind CSS 4.0**: Employs the latest CSS-first configuration and fluid responsive design tokens.
-- **Predictable State Management**: Zustand handles client-side global authentication and caching state without boilerplate context.
-- **Robust UI Framework**: Lucide React for consistent iconography and Recharts for live transaction telemetry.
-
-### 💾 Data & Security Integrity
-- **Isolated MySQL Schemas**: Strictly implements database-per-service to prevent cross-service database coupling.
-- **Transactional Consistency**: Relational database operations managed with JPA/Hibernate transactions to prevent balance anomalies.
-- **Layered Security**: Configured with Spring Security, stateless JSON Web Tokens (JWT), and OAuth2/Keycloak hooks for user credential protection.
+Each service owns its own tables, which Hibernate creates automatically (`ddl-auto=update`), so no manual schema is needed. By default all services point at **one** MySQL database (`MYSQL_DB_NAME`). To give each service its own database, run it with a different `MYSQL_DB_NAME`.
 
 ---
 
-## 🚦 Microservice & Port Inventory
+## Security model
 
-| Service / App | Port | Context Path | Primary Responsibility / Tech Highlight |
-| :--- | :---: | :--- | :--- |
-| **Service-Registry** | `8761` | `/` | Netflix Eureka Discovery Hub |
-| **API-Gateway** | `8088` | `/` | Spring Cloud Gateway proxy, routing client requests |
-| **User-Service** | `8082` | `/api/users/` | Accounts, profiles, login, JWT issuance, Keycloak Hook |
-| **Account-Service** | `8081` | `/accounts/` | Checking, savings, balance check, status updates |
-| **Transaction-Service**| `8084` | `/transactions/` | Direct deposits, withdrawals, live database logs |
-| **Fund-Transfer** | `8085` | `/api/fund-transfers/`| Validation, debit-to-credit multi-service coordination |
-| **Sequence-Generator** | `8083` | `/` | System-wide unique sequence IDs |
-| **React Frontend** | `5173` | `/` | React 19 Client Dashboard, Recharts visualization |
+- **Sign-in:** User-Service checks the password (stored as a BCrypt hash) and issues a JWT, valid for 24 hours, that carries the user's id.
+- **Gateway:** every request except login and register must carry a valid token. The gateway removes any `X-Auth-User-Id` header the client sent and sets it from the verified token.
+- **Ownership:** services only let you read or change your own accounts, transactions, transfers and profile.
+- **Internal-only endpoints** used between services (balance changes, sequence numbers, user lookups) are refused at the gateway.
+- **Money rules:** amounts must be positive. You can't transfer to the same account. Balances can't go below zero. Both sides of a transfer change in one database transaction. If saving the history fails, the money movement is reversed.
+
+> The services trust the gateway's `X-Auth-User-Id` header, so in any real deployment **only the gateway may be reachable from outside**. Keep ports 8081–8085 private.
 
 ---
 
-## 🚀 Quick Start Guide
+## Running it
 
-### 📋 Prerequisites
-- **Java JDK 17** or higher
-- **Node.js v18+** & npm
-- **MySQL 8.0+** running locally (port `3306`)
+### Prerequisites
+- Java 17+ and Maven
+- Node.js 20+ and npm
+- MySQL 8 on port 3306, with an empty database created (e.g. `CREATE DATABASE finexus;`)
 
-### 📦 Database Initialization
-Create the database schemas in MySQL. You can use standard MySQL commands:
-```sql
-CREATE DATABASE user_db;
-CREATE DATABASE account_db;
-CREATE DATABASE transaction_db;
-CREATE DATABASE fund_transfer_db;
+### 1. Configure
+
+```bash
+cp backend/.env.example backend/.env      # then edit it
+cp frontend/.env.example frontend/.env
 ```
 
-Update the MySQL credentials in the environment variables file (`backend/.env` or equivalent) or directly in each service's `src/main/resources/application.properties`.
+`backend/.env` needs your MySQL login and a `JWT_SECRET` (base64, at least 32 bytes). The example file shows how to generate one.
 
-### ⚙️ Running the Backend Services
-Services must be started in sequence so that service discovery resolves correctly:
+### 2. Start the backend
 
-1. **Start Eureka Server**:
-   ```bash
-   cd backend/Service-Registry
-   mvn spring-boot:run
-   ```
-2. **Start API Gateway**:
-   ```bash
-   cd backend/API-Gateway
-   mvn spring-boot:run
-   ```
-3. **Start Core Services** (in separate terminals or via IDE):
-   ```bash
-   # Run each of these commands in its respective folder inside backend/
-   mvn spring-boot:run
-   ```
+On Windows:
+```bash
+cd backend
+start-services.bat
+```
+This loads `.env` and starts the registry, the gateway, then the services. Wait until all of them show on http://localhost:8761. `stop-services.bat` stops them.
 
-*Windows users can utilize `backend/start-services.bat` to automate the sequential initialization of all backend microservices.*
+On other systems, export the variables from `.env`, then run `mvn spring-boot:run` in `Service-Registry`, then `API-Gateway`, then each remaining service folder.
 
-### 🖥️ Running the Frontend Client
+### 3. Start the frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+Open http://localhost:5173. Registering creates your user and a savings account.
+
+### Demo mode (no backend)
+
+Set `VITE_USE_MOCK_DATA=true` in `frontend/.env` and sign in with `demo@finexus.com` / `password123`. The app then uses built-in sample data that follows the same rules as the backend. Changes reset when you reload the page.
 
 ---
 
-<details>
-<summary>📂 View Database Schemas</summary>
+## API (through the gateway, `http://localhost:8088`)
 
-### User Profiles (`user_db`)
-```sql
-CREATE TABLE user (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    email_id VARCHAR(255) UNIQUE NOT NULL,
-    contact_no VARCHAR(20),
-    password VARCHAR(255) NOT NULL,
-    auth_id VARCHAR(255),
-    identification_number VARCHAR(50),
-    status ENUM('ACTIVE', 'INACTIVE', 'PENDING') DEFAULT 'PENDING',
-    user_profile_id BIGINT,
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE user_profile (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    address TEXT,
-    date_of_birth DATE
-);
-```
-
-### Accounts (`account_db`)
-```sql
-CREATE TABLE account (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    account_number VARCHAR(20) UNIQUE NOT NULL,
-    user_id BIGINT NOT NULL,
-    account_type ENUM('SAVINGS', 'CURRENT', 'LOAN') NOT NULL,
-    balance DECIMAL(15,2) DEFAULT 0.00,
-    status ENUM('ACTIVE', 'INACTIVE', 'CLOSED') DEFAULT 'ACTIVE',
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
-
-### Transactions (`transaction_db`)
-```sql
-CREATE TABLE transaction (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    transaction_id VARCHAR(50) UNIQUE NOT NULL,
-    account_id BIGINT NOT NULL,
-    transaction_type ENUM('DEPOSIT', 'WITHDRAWAL', 'TRANSFER_IN', 'TRANSFER_OUT'),
-    amount DECIMAL(15,2) NOT NULL,
-    balance_after DECIMAL(15,2) NOT NULL,
-    description TEXT,
-    status ENUM('PENDING', 'COMPLETED', 'FAILED') DEFAULT 'PENDING',
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Fund Transfers (`fund_transfer_db`)
-```sql
-CREATE TABLE fund_transfer (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    transfer_id VARCHAR(50) UNIQUE NOT NULL,
-    from_account_id BIGINT NOT NULL,
-    to_account_id BIGINT NOT NULL,
-    amount DECIMAL(15,2) NOT NULL,
-    description TEXT,
-    status ENUM('PENDING', 'COMPLETED', 'FAILED') DEFAULT 'PENDING',
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-</details>
-
-<details>
-<summary>📝 View API Endpoints Summary</summary>
-
-All requests go through API Gateway (`http://localhost:8088`).
-
-| Service | Method | Route | Description |
-| :--- | :---: | :--- | :--- |
-| **Users** | `POST` | `/api/users` | Register a new client user |
-| **Users** | `GET` | `/api/users/{id}` | Fetch profile details by ID |
-| **Accounts**| `POST` | `/accounts` | Create checking/savings account |
-| **Accounts**| `GET` | `/accounts/user/{userId}` | List accounts belonging to a user |
-| **Txns** | `POST` | `/transactions/deposit` | Credit funds to an account |
-| **Txns** | `POST` | `/transactions/withdraw` | Debit funds from an account |
-| **Transfers**| `POST` | `/api/fund-transfers` | Initiate inter-account transfer |
-
-</details>
+| Method | Route | Who | Description |
+| :---: | :--- | :--- | :--- |
+| POST | `/api/auth/register` | public | Create a user (and a savings account) |
+| POST | `/api/auth/login` | public | Sign in, returns a JWT |
+| POST | `/api/auth/change-password` | signed in | Change your password |
+| GET / PUT | `/api/users/{id}` | own id | Read / update your profile |
+| GET | `/accounts/user/{userId}` | own id | Your accounts |
+| POST | `/accounts` | signed in | Open an account (starts at ₹0) |
+| PUT | `/accounts/closure?accountNumber=` | owner | Close an empty account |
+| GET | `/accounts?accountNumber=` | owner | One account |
+| POST | `/transactions` | owner | `DEPOSIT` or `WITHDRAWAL` |
+| GET | `/transactions?accountId=` | owner | Account history |
+| POST | `/fund-transfers` | owner of `fromAccount` | Send money (`toAccount` may be an account number or `FIN…` ID) |
+| GET | `/fund-transfers/{reference}` | sender or receiver | Transfer details |
 
 ---
 
-**Happy Banking! 🏦✨**
+## Tests
+
+```bash
+cd backend && mvn test          # money rules, gateway security, sign-up validation
+cd frontend && npm test         # utilities, account selection, demo-mode rules
+```
+
+Backend tests are plain unit tests (JUnit + Mockito) and don't need MySQL or a running registry.
+
+---
+
+## Project layout
+
+```
+backend/
+  API-Gateway/  Service-Registry/  User-Service/  Account-Service/
+  Transaction-Service/  Fund-Transfer/  Sequence-Generator/
+  start-services.bat  stop-services.bat  .env.example
+frontend/
+  src/pages/        app and public pages
+  src/components/   layout and UI building blocks
+  src/services/     API calls (+ mock/ for demo mode)
+  src/store/        Zustand state
+```

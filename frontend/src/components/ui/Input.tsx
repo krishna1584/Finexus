@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -14,7 +14,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, icon, iconRight, showPasswordToggle, className = '', type, id, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const inputType = showPasswordToggle ? (showPassword ? 'text' : 'password') : type;
-    const inputId = id ?? `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
+    // Unique even when two inputs share a label (or have none).
+    const autoId = useId();
+    const inputId = id ?? autoId;
+    const messageId = `${inputId}-msg`;
+    const hasMessage = Boolean(error || hint);
 
     return (
       <div className="w-full">
@@ -36,9 +40,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             type={inputType}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={hasMessage ? messageId : undefined}
             className={[
               'w-full bg-[var(--bg-surface-2)] text-[var(--text-primary)]',
-              'border rounded-2xl px-4 py-3.5 text-sm',
+              // 16px on phones stops iOS zooming into the field on tap.
+              'border rounded-2xl px-4 py-3.5 text-base sm:text-sm',
               'placeholder:text-[var(--text-secondary)]/60',
               'transition-all duration-150 outline-none',
               'focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary-soft)]',
@@ -55,6 +62,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -67,13 +76,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <div className="flex items-center gap-1.5 mt-1.5">
+          <div id={messageId} className="flex items-center gap-1.5 mt-1.5" role="alert">
             <AlertCircle size={12} className="text-[var(--negative)] flex-shrink-0" />
             <p className="text-xs text-[var(--negative)]">{error}</p>
           </div>
         )}
         {hint && !error && (
-          <p className="text-xs text-[var(--text-secondary)] mt-1.5">{hint}</p>
+          <p id={messageId} className="text-xs text-[var(--text-secondary)] mt-1.5">{hint}</p>
         )}
       </div>
     );
@@ -92,7 +101,8 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, className = '', id, ...props }, ref) => {
-    const selectId = id ?? `select-${label?.toLowerCase().replace(/\s+/g, '-')}`;
+    const autoId = useId();
+    const selectId = id ?? autoId;
     return (
       <div className="w-full">
         {label && (
@@ -108,7 +118,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           id={selectId}
           className={[
             'w-full bg-[var(--bg-surface-2)] text-[var(--text-primary)]',
-            'border rounded-2xl px-4 py-3.5 text-sm appearance-none',
+            'border rounded-2xl px-4 py-3.5 text-base sm:text-sm appearance-none',
             'transition-all duration-150 outline-none',
             'focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary-soft)]',
             error ? 'border-[var(--negative)]' : 'border-[var(--border-subtle)]',

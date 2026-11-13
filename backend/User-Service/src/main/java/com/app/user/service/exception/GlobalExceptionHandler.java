@@ -26,7 +26,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
 
-        return new ResponseEntity<>(new ErrorResponse(errorCodeBadRequest, ex.getLocalizedMessage()), HttpStatus.BAD_REQUEST);
+        // Return the first field's readable message (e.g. "Password must be at least 8 characters"),
+        // not Spring's long internal description.
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(e -> e.getDefaultMessage())
+                .orElse("Invalid request");
+        return new ResponseEntity<>(new ErrorResponse(errorCodeBadRequest, message), HttpStatus.BAD_REQUEST);
     }
 
    

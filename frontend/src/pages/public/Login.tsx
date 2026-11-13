@@ -89,7 +89,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <h1 className="font-display text-3xl font-extrabold">Welcome back</h1>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">Sign in to continue to your Finexus workspace</p>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">Sign in to your Finexus account</p>
               </div>
             </Link>
           </div>
@@ -114,7 +114,7 @@ export default function LoginPage() {
                 label="Email"
                 type="email"
                 id="login-email"
-                placeholder="you@company.com"
+                placeholder="you@example.com"
                 icon={<Mail size={16} />}
                 error={errors.email?.message}
                 autoComplete="email"

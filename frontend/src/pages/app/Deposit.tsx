@@ -152,10 +152,10 @@ export default function DepositPage() {
 
           <Card padding="sm">
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setMode('deposit')} className={`h-11 rounded-xl text-sm font-semibold transition-colors ${mode === 'deposit' ? 'bg-[var(--accent-primary)] text-white dark:bg-[var(--accent-secondary)] dark:text-[#0B0F14]' : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'}`}>
+              <button type="button" aria-pressed={mode === 'deposit'} onClick={() => setMode('deposit')} className={`h-11 rounded-xl text-sm font-semibold transition-colors ${mode === 'deposit' ? 'bg-[var(--accent-primary)] text-white dark:bg-[var(--accent-secondary)] dark:text-[#0B0F14]' : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'}`}>
                 <span className="inline-flex items-center gap-2"><ArrowDownToLine size={14} /> Deposit</span>
               </button>
-              <button onClick={() => setMode('withdraw')} className={`h-11 rounded-xl text-sm font-semibold transition-colors ${mode === 'withdraw' ? 'bg-[var(--negative)] text-white' : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'}`}>
+              <button type="button" aria-pressed={mode === 'withdraw'} onClick={() => setMode('withdraw')} className={`h-11 rounded-xl text-sm font-semibold transition-colors ${mode === 'withdraw' ? 'bg-[var(--negative)] text-white' : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'}`}>
                 <span className="inline-flex items-center gap-2"><ArrowUpFromLine size={14} /> Withdraw</span>
               </button>
             </div>
@@ -168,10 +168,12 @@ export default function DepositPage() {
                 {QUICK_AMOUNTS.map((val) => (
                   <button
                     key={val}
+                    type="button"
+                    aria-pressed={parsedAmount === val}
                     onClick={() => setAmount(String(val))}
                     className={`h-10 rounded-xl border text-sm transition-colors ${parsedAmount === val ? 'border-[var(--accent-primary)] bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] dark:border-[var(--accent-secondary)] dark:bg-[var(--accent-secondary-soft)] dark:text-[var(--accent-secondary)]' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-2)] text-[var(--text-secondary)]'}`}
                   >
-                    {formatCurrency(val)}
+                    ₹{val.toLocaleString('en-IN')}
                   </button>
                 ))}
               </div>
